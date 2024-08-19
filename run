@@ -1,0 +1,2 @@
+gcc main.c -o glad.exe -O2
+./glad.exe
