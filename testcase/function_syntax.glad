@@ -1,0 +1,27 @@
+[entry]
+main() {
+    arena store_here;
+    store_here.arrays();
+}
+
+// initialization of a variable is done like this:
+//
+// name: type = initial value => arena;
+
+arrays(storage: arena) : int[] {
+    // static array
+    elements: int[] = [5, 3, 8, 7, 6]; // Size automatically inferred
+    elements_2: int[5] = [2, 3]; // Size can also be set manually, all other values will be set to 0.
+
+
+    // Size can be inferred, or an initial size can be set.
+    dynamic_arr: int<> = <6, 7, 8, 9> => storage; 
+
+
+    //appending is done with the + operator
+    dynamic_arr += [5, 6, 3];
+    dynamic_arr += 3;
+    print("%", dynamic_arr + 4); // <6, 7, 8, 9, 5, 6, 3, 3, 4>
+
+    return elements;
+}

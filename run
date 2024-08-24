@@ -1,2 +1,2 @@
-gcc main.c -o glad.exe -O2
-./glad.exe
+gcc main.c -o glad_compile.exe -O2
+./glad_compile.exe test.glad

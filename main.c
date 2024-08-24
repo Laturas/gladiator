@@ -1,113 +1,106 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <memoryapi.h>
-#include "safe_strings.c"
+#include <windows.h>
+#include "./libraries/debug.c"
+#include "./libraries/safe_strings.c"
+#include "./libraries/arenas.h"
 
-enum Token {
-    CUSTOM,
-    OPEN_BRACE,
-    CLOSE_BRACE,
-    OPEN_PAREN,
-    CLOSE_PAREN,
-    SEMICOLON,
-    i32,
-    u8,
-    RETURN,
-    INT_LITERAL,
-} typedef Token;
-
-void print_token(Token input_token) {
-    switch (input_token) {
-        case CUSTOM:
-            printf("_"); break;
-        case OPEN_BRACE:
-            printf("{"); break;
-        case CLOSE_BRACE:
-            printf("}"); break;
-        case OPEN_PAREN:
-            printf("("); break;
-        case CLOSE_PAREN:
-            printf(")"); break;
-        case SEMICOLON:
-            printf(";"); break;
-        case i32:
-            printf("int"); break;
-        case u8:
-            printf("u8"); break;
-        case RETURN:
-            printf("return"); break;
-        case INT_LITERAL:
-            printf("[value]"); break;
-    }
-}
+#include "atomizer.h"
 
 /**
 * Dumps the contents of a file into a char*
 */
-string map_file_to_memory(char* file) {
-    FILE* src_file = fopen(file, "rb");
-    if (!src_file) {printf("Source file not found"); return NULL;}
+string map_file_to_memory(arena aren, char* file) {
+    FILE* src_file = fopen(file, "r");
+    if (!src_file) {debug_print("PARSER ERROR: Source file not found: "); printf(file); return NULL;}
 
+    // Gets the length of the source file
     fseek(src_file,0,SEEK_END);
     int length = ftell(src_file);
-    printf("length: %d\n",length);
     fseek(src_file,0,SEEK_SET);
-    char* buffer = calloc(length, sizeof(char));
-    string ret_str = malloc(sizeof(string));
+    
+    string filestr = newstr(aren);
+    char* buffer = apush_buf(aren, length);
 
     fread(buffer,1,length,src_file);
     fclose(src_file);
-    ret_str->raw_string = buffer;
-    ret_str->length = length;
-    return ret_str;
+
+    filestr->raw_string = buffer;
+    filestr->length = length - 1;
+    return filestr;
 }
 
-Token match_6(string str) {
+#define rawptr void*
+typedef struct AST {
+    rawptr start;
+    rawptr end;
+} AST;
 
-}
+enum NodeType {
+    FUNCTION,
+    VAR,
+    LITERAL,
+};
 
-Token match_5(string str) {
+enum Type {
+    TYPE_VOID,
+    TYPE_I8,
+    TYPE_I16,
+    TYPE_I32,
+    TYPE_I64,
+    TYPE_U8,
+    TYPE_U16,
+    TYPE_U32,
+    TYPE_U64,
+    TYPE_CHAR,
+    TYPE_GLYPH,
+    TYPE_STRUCT,
+    TYPE_RAWPTR,
+    TYPE_REF,
+    TYPE_STRING,
+};
 
-}
+// FUNCTION NODE SYNTAX
+// [type] -> [Params] -> [Body]
+typedef struct Function {
+    rawptr params;
+    rawptr body;
+} Function;
 
-Token match_4(string str) {
 
-}
-
-Token match_3(string str) {
-
-}
-
-Token match_1() {
-    
-}
-
-Token match(string str) {
-    switch (str->length) {
-        case 6:
-            return match_6(str);
-        case 5:
-            return match_5(str);
-        case 4:
-            return match_4(str);
-        case 3:
-            if (str->raw_string[0] == 'i' && str->raw_string[1] == 'n' && str->raw_string[2] == 't') {return i32;}
-            return i32;
-            //return match_3(str);
-        case 2:
-            if (str->raw_string[0] == 'u' && str->raw_string[1] == '8') {return u8;}
-            return CUSTOM;
-        case 1:
-            if (str->raw_string[0] == 'u' && str->raw_string[1] == '8') {return u8;}
-        default:
-            return CUSTOM;
+AST* build_tree(arena ast_arena, AtomList* atoms) {
+    AST* syntree;
+    {
+        AST _syntree = {0};
+        syntree = apush(ast_arena, _syntree);
+    }
+    u64 current_token_index = 0;
+    u64 line_number = 1;
+    while (current_token_index < atoms->listlen) {
+        Atom current_atom = atoms->list[current_token_index++];
+        switch (current_atom.token) {
+            case NEWLINE: line_number++; continue;
+            case CUSTOM: continue;
+        }
     }
 }
 
 int main(int argc, char* argv[]) {
-    string str = map_file_to_memory(".\\testcase\\main.glad");
+    if (argc < 2) {printf("Usage: ./<exe> <source file>\n"); return 1;}
+    u64 gigabyte = 1073741824 / 3;
+    arena rawfile_arena = aalloc(gigabyte);
+    arena token_arena = aalloc(gigabyte);
+    arena ast_arena = aalloc(gigabyte);
 
-    println(str);
+    string str = map_file_to_memory(rawfile_arena, argv[1]);
 
-    clear(str);
+    if (str == NULL) return 1; else printf("File read in successfully\n");
+
+    AtomList* atoms = atomize(token_arena, str);
+    //print_atom_list(atoms);
+    //build_tree(ast_arena, atoms);
+
+
+    afree(rawfile_arena);
+    afree(token_arena);
 }

@@ -1,0 +1,32 @@
+// Enums are purely a source of convenience for the developer.
+// They are find+replaced with their underlying value at compile time.
+// By default, an enum is an integer starting at 0 for the first item.
+//
+// 
+
+// enum names are written in PascalCase. Their elements are written in SCREAMING_SNAKE_CASE
+Example: enum {
+    ITEM_1,
+    ITEM_2,
+    ITEM_3,
+}
+
+// The way they are written is to allow them to act as a replacement for C-style macros.
+// For instance, if you defined a Consts enum, you can set their value to various math constants to be used in calculation.
+
+Consts: enum {
+    PI = 3.14159,
+    E = 2.71828,
+    PHI = 1.618,
+    FEIGENBAUM = 4.669,
+}
+
+do_math() {
+    return Consts.PI * Consts.E == 3.14159 * 2.71828; // true
+}
+
+// You cannot mix types in an enum. This will not compile:
+Invalid: enum {
+    STRING = "A string",
+    NUMBER = 5,
+} // sus among us
