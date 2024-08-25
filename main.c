@@ -36,13 +36,14 @@ typedef struct AST {
     rawptr end;
 } AST;
 
-enum NodeType {
+typedef enum NodeType {
     FUNCTION,
     VAR,
     LITERAL,
+    
 };
 
-enum VarType {
+typedef enum VarType {
     TYPE_VOID,
     TYPE_I8,
     TYPE_I16,
@@ -58,10 +59,10 @@ enum VarType {
     TYPE_RAWPTR,
     TYPE_REF,
     TYPE_STRING,
-};
+} VarType;
 
 typedef struct Var {
-    enum VarType var_type;
+    VarType var_type;
     string var_identifier;
 } Var;
 
@@ -70,7 +71,7 @@ typedef struct Var {
 typedef struct Function {
     string name;
     rawptr params;
-    rawptr type;
+    VarType type;
     rawptr body;
 } Function;
 
@@ -85,6 +86,7 @@ struct FunctionConstructorReturn {
 };
 #define FIND_NON_NEWLINE while (atoms->list[++current_token_index].token != NEWLINE)
 struct FunctionConstructorReturn construct_function(arena ast_arena, AtomList* atoms, u64 current_token_index) {
+    Function new_fn = {NULL, NULL, TYPE_VOID, NULL};
     // Constructs the params (UNIMPLEMENTED)
     while (atoms->list[current_token_index].token != CLOSE_PAREN) current_token_index++;
 
@@ -94,10 +96,19 @@ struct FunctionConstructorReturn construct_function(arena ast_arena, AtomList* a
     if (atoms->list[current_token_index].token != COLON) {printf("Unexpected token: Function names need to be followed by a : before the return type(s)");}
     FIND_NON_NEWLINE;
 
+    if (atoms->list[current_token_index].token != I32) {printf("Implementer error: Currently only i32 is supported as a return type");}
+
+    FIND_NON_NEWLINE;
+
     if (atoms->list[current_token_index].token != OPEN_BRACE) {printf("Unexpected token: Function bodies must be preceeded with a {");}
 
-    while (atoms->list[current_token_index].token != CLOSE_BRACE) {
-        
+    Token current_tok;
+    while ((current_tok = atoms->list[current_token_index].token) != CLOSE_BRACE) {
+        switch (current_tok) {
+            case OPEN_BRACE: break;
+            case I32: new_fn.type = TYPE_I32; break;
+            case RETURN: new_fn.type = TYPE_I32; break;
+        }
     }
     // Constructs the function body
     //Token current_token;
