@@ -1,15 +1,15 @@
-struct chain_string {
+chain_string : struct {
     string underlying_string,
     ->chain_string next_string,
 }
 
 [entry]
-fn main() {
+main() {
     chain_string_test();
 }
 
 [inline]
-fn chain_string_test() {
+chain_string_test() {
     chain_string str = {"world!", null};
     chain_string str_2 = {"hello ", ->str};
 
@@ -19,7 +19,7 @@ fn chain_string_test() {
 /** 
 * Walks the stack of linked strings and returns a completed list
 */
-fn to_string(chain_string str) : string {
+to_string(chain_string str) : string {
     ->chain_string next = str.next_string;
     string concat_str = "" + str.underlying_string;
 
