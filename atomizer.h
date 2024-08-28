@@ -36,8 +36,7 @@ enum Token {
 
 typedef struct Atom {
     Token token;
-    void* extra_data;
-    int extra_data_size;
+    _String extra_str;
     u64 line_number;
 } Atom;
 

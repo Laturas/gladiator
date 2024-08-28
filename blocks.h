@@ -1,8 +1,10 @@
+#ifndef INCLUDES
+#include "ALL_INCLUDES"
+#endif
+
 /**
  * All blocks have an identifier at the front in the form of a BlockType enum.
  */
-
-
 typedef enum BlockType {
     VOIDBLOCK,
     OTHER,
@@ -14,22 +16,26 @@ typedef enum BlockType {
     VARIABLE,
 } BlockType;
 
-
-typedef struct BLOCK_Function {
-    BlockType type;
-
-    string name;
-    BlockType* params; // Single params only right now
-    BlockType returns; // Single returns only right now
-    BlockType body;
-} Function;
+void print_block_type (BlockType type) {
+    switch (type) {
+        case VOIDBLOCK: printf("Void\n"); break;
+        case OTHER: printf("Other\n"); break;
+        case EXPRESSION: printf("Expression\n"); break;
+        case FUNCTION: printf("Function\n"); break;
+        case IDENTIFIER:printf("Identifier\n"); break;
+        case LITERAL: printf("Literal\n"); break;
+        case RETURNBLOCK: printf("Return\n"); break;
+        case VARIABLE: printf("Var\n"); break;
+        default: printf("Wtf\n"); break;
+    }
+    fflush(stdout);
+}
 
 /**
  * This is used for the return types of functions and such
  */
-typedef struct BLOCK_TypeInfo {
+typedef struct BLOCK_Type {
     BlockType type;
-
     VarType var_type;
 } Scope;
 
@@ -41,10 +47,17 @@ typedef struct BLOCK_Return {
 
 typedef struct BLOCK_Variable {
     BlockType type;
-
-    string name;
+    _String name;
     VarType variable_type;
 } Variable;
+
+typedef struct BLOCK_Function {
+    BlockType type;
+    string name;
+    Variable* params; // Single params only right now
+    BlockType returns; // Single returns only right now
+    BlockType body;
+} Function;
 
 typedef struct BLOCK_Expression {
     BlockType type;
@@ -64,71 +77,4 @@ typedef struct BLOCK_Void {
 //    Variable* variable_list;
 //} FunctionParams;
 
-BlockType* parse_params(arena block_arena, Atom** atom_list, u64 item_access) {
-    Atom current_atom;
-    Variable current_var = {VARIABLE, NULL, TYPE_VOID};
-    int colon_encountered = 0;
-    
-    //printf("%p", (*atom_list)[0]); fflush(stdout);
-    //printf("%d", ((current_atom = (*atom_list)[0]).token != CLOSE_PAREN)); fflush(stdout);
-    while ((current_atom = (*atom_list)[item_access]).token != CLOSE_PAREN) {
-        switch (current_atom.token) {
-            case CUSTOM: {
-                printf("Custom\n"); fflush(stdout);
-                if (colon_encountered) {
-                    printf("Parsing error on line %d: Found second identifier when type was expected\n", current_atom.line_number);
-                    exit(1);
-                }
-                if (current_var.name) {
-                    printf("Parsing error on line %d: conflicting variable identifiers:\n", current_atom.line_number);
-                    print(current_var.name); printf(" vs "); println(current_atom.extra_data);
-                    exit(1);
-                }
-                current_var.name = current_atom.extra_data;
-                break;
-            }
-            case COLON: {
-                printf("Colon\n"); fflush(stdout);
-                if (colon_encountered) {
-                    printf("Parsing error on line %d: Extra ':' separator detected. Only one ':' is needed between the identifier and type of a variable\n", current_atom.line_number);
-                    exit(1);
-                }
-                colon_encountered = 1;
-                break;
-            }
-            case I32: {
-                if (!colon_encountered) {
-                    printf("Parsing error on line %d: No ':' separator detected between variable name and type\n", current_atom.line_number); fflush(stdout);
-                    exit(1);
-                }
-                colon_encountered = 0;
-                break;
-            }
-            case CLOSE_PAREN: {
-                printf("Closed!"); fflush(stdout);
-                if (current_var.variable_type == TYPE_VOID && !current_var.name) {
-                    Voidblock empty = {0};
-                    return apush(block_arena, empty);
-                } else {
-                    if (current_var.name) {
-                        printf("Parsing error on line %d: No type specified", current_atom.line_number);
-                    }
-                }
-            }
-            default: {
-                printf("Parsing error on line %d: Unexpected token\n", current_atom.line_number); fflush(stdout);
-                exit(1);
-            }
-        }
-        item_access++;
-    }
-}
-
-Function* function_block(arena block_arena, string name, Atom** atom_list) {
-    Function* new_func = NULL;
-    {
-        Function _new_func = {FUNCTION, name, 0, 0, 0};
-        new_func = apush(block_arena, _new_func);
-    }
-    new_func->params = parse_params(block_arena, atom_list, 2); // Hardcoded
-}
+#include "blocks.c"

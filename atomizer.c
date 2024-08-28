@@ -1,14 +1,13 @@
-#ifndef ATOMIZER
-#include "atomizer.h"
+#ifndef INCLUDES
+#include "ALL_INCLUDES"
 #endif
 
 void print_atom(Atom input_atom, enum AtomPrintParams params) {
     if (params & LINES) {printf("Line %d: ", input_atom.line_number);}
-    _String hold = {input_atom.extra_data_size, input_atom.extra_data};
 
     switch (input_atom.token) {
         case CUSTOM:
-            printf("OTHER("); print(&hold); printf(")"); break;
+            printf("OTHER("); print(&input_atom.extra_str); printf(")"); break;
         case OPEN_BRACE:
             printf("{"); break;
         case CLOSE_BRACE:
@@ -123,13 +122,13 @@ Atom token_list_append(arena token_arena, AtomList* atomlist, Atom atom) {
     return atom;
 }
 
-Atom construct_atom(Token token, string file_text, u64 line) {
-    Atom return_atom = {token,NULL,0,line};
+Atom construct_atom(Token token, _String file_text, u64 line) {
+    _String tmp = {file_text.length, file_text.raw_string};
+    Atom return_atom = {token,tmp,line};
     switch (token) {
         case CUSTOM:
         case INT_LITERAL:
-            return_atom.extra_data_size = file_text->length;
-            return_atom.extra_data = file_text->raw_string;
+            return_atom.extra_str = file_text;
         default:
             return return_atom;
     }
@@ -167,7 +166,7 @@ AtomList* atomize(arena token_storage_arena, string str) {
         }
         line_num += (symbol == NEWLINE);
 
-        prevAtom = token_list_append(token_storage_arena, atoms, construct_atom(match(&newstr), &newstr, line_num));
+        prevAtom = token_list_append(token_storage_arena, atoms, construct_atom(match(&newstr), newstr, line_num));
         newstr.raw_string += newstr.length;
         newstr.length = 1;
     }
