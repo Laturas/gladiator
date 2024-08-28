@@ -54,7 +54,7 @@ AST* build_tree(arena ast_arena, AtomList* atom_list) {
             case OPEN_PAREN:
                 if (expect == FUNCTION) {
                     Function* return_func = function_block(ast_arena, &strdata, &atoms);
-                    if (func_ls->list) func_ls->list = return_func ; else {apush(dynamic_list_arena, return_func); func_ls->length++;}
+                    if (func_ls->list) {func_ls->list = return_func;} else {apush(dynamic_list_arena, return_func); func_ls->length++;}
                     
                     expect = NONE;
                 }

@@ -98,7 +98,7 @@ Function* function_block(arena block_arena, string name, Atom** atom_list) {
     }
     Atom** ls_cop = atom_list;
     new_func->params = parse_params(block_arena, ls_cop); // Hardcoded
-    //print_var_type(new_func->params->variable_type);
-    //ptrless_print(((Variable*)new_func->params)->name);
+    print_var_type(new_func->params->variable_type);
+    ptrless_print(((Variable*)new_func->params)->name);
     //new_func->returns = parse_returns();
 }
