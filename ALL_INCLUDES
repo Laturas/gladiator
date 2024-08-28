@@ -1,0 +1,13 @@
+#ifndef INCLUDES
+#define INCLUDES
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+#include "./libraries/debug.c"
+#include "./libraries/safe_strings.c"
+#include "./libraries/arenas.h"
+#include "atomizer.h"
+#include "vars.h"
+#include "blocks.h"
+#include "ast_builder.c"
+#endif

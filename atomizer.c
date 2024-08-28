@@ -1,14 +1,13 @@
-#ifndef ATOMIZER
-#include "atomizer.h"
+#ifndef INCLUDES
+#include "ALL_INCLUDES"
 #endif
 
-void print_atom(Atom input_atom) {
-    printf("TOKEN: ");
-    _String hold = {input_atom.extra_data_size, input_atom.extra_data};
+void print_atom(Atom input_atom, enum AtomPrintParams params) {
+    if (params & LINES) {printf("Line %d: ", input_atom.line_number);}
 
     switch (input_atom.token) {
         case CUSTOM:
-            printf("OTHER("); print(&hold); printf(")"); break;
+            printf("OTHER("); print(&input_atom.extra_str); printf(")"); break;
         case OPEN_BRACE:
             printf("{"); break;
         case CLOSE_BRACE:
@@ -43,6 +42,12 @@ void print_atom(Atom input_atom) {
             printf("NEWLINE"); break;
         case ONELINE_COMMENT:
             printf("//"); break;
+    }
+}
+
+void print_atom_list(AtomList* list, enum AtomPrintParams params) {
+    for (int i = 0; i < list->listlen; i++) {
+        print_atom(list->list[i], params); printf("\n");
     }
 }
 
@@ -111,27 +116,21 @@ Token match(string str) {
 }
 
 Atom token_list_append(arena token_arena, AtomList* atomlist, Atom atom) {
-    if (atom.token == WHITESPACE || atom.token == ONELINE_COMMENT) {return atom;} // Whitespace is not appended
+    if (atom.token == WHITESPACE || atom.token == ONELINE_COMMENT || atom.token == NEWLINE) {return atom;} // Whitespace is not appended
     Atom* a = apush(token_arena, atom);
     if (!(atomlist->listlen++)) {atomlist->list = a;}
     return atom;
 }
 
-Atom construct_atom(Token token, string file_text) {
-    Atom return_atom = {token,NULL,0};
+Atom construct_atom(Token token, _String file_text, u64 line) {
+    _String tmp = {file_text.length, file_text.raw_string};
+    Atom return_atom = {token,tmp,line};
     switch (token) {
         case CUSTOM:
         case INT_LITERAL:
-            return_atom.extra_data_size = file_text->length;
-            return_atom.extra_data = file_text->raw_string;
+            return_atom.extra_str = file_text;
         default:
             return return_atom;
-    }
-}
-
-void print_atom_list(AtomList* list) {
-    for (int i = 0; i < list->listlen; i++) {
-        print_atom(list->list[i]); printf("\n");
     }
 }
 
@@ -143,6 +142,7 @@ void print_atom_list(AtomList* list) {
 AtomList* atomize(arena token_storage_arena, string str) {
     _String newstr = {1, str->raw_string};
     AtomList* atoms;
+    u64 line_num = 1;
 
     // I don't want to accidentally modify the stack-allocated struct
     {
@@ -153,17 +153,20 @@ AtomList* atomize(arena token_storage_arena, string str) {
     char* max_bound = str->raw_string + str->length;
     char symbol; Atom prevAtom;
     while (max_bound > newstr.raw_string + newstr.length) {
+        symbol = CUSTOM;
         while (prevAtom.token == ONELINE_COMMENT && (symbol = match_1(newstr.raw_string[0])) != NEWLINE && IN_BOUNDS) {newstr.raw_string++;}
+        line_num += (symbol == NEWLINE);
         if (!IN_BOUNDS) {break;}
 
         // Moves to the first non-whitespace character
         while ((symbol = match_1(newstr.raw_string[0])) == WHITESPACE) {newstr.raw_string++;}
 
         if (symbol == CUSTOM) { // Extends the length of the current token until it hits a tokenizing character
-            while (!match_1(newstr.raw_string[newstr.length]) && IN_BOUNDS) {newstr.length++;}
+            while (!(symbol = match_1(newstr.raw_string[newstr.length])) && IN_BOUNDS) {newstr.length++;}
         }
+        line_num += (symbol == NEWLINE);
 
-        prevAtom = token_list_append(token_storage_arena, atoms, construct_atom(match(&newstr), &newstr));
+        prevAtom = token_list_append(token_storage_arena, atoms, construct_atom(match(&newstr), newstr, line_num));
         newstr.raw_string += newstr.length;
         newstr.length = 1;
     }
