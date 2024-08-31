@@ -34,11 +34,16 @@ enum Token {
     ONELINE_COMMENT,
 } typedef Token;
 
+#ifndef u32
+#define u32 unsigned int
+#endif
+
 typedef struct Atom {
     Token token;
-    _String extra_str;
-    unsigned short line_number;
+    u32 start;
 } Atom;
+
+void test_atom() {sizeof(Atom);}
 
 typedef struct AtomList {
     u64 listlen;
@@ -48,9 +53,10 @@ typedef struct AtomList {
 enum AtomPrintParams {
     NONE = 0,
     LINES = 1,
+    FILE_PRESENT = 2,
 };
 
-void print_atom_list(AtomList* list, enum AtomPrintParams params);
+void print_atom_list(AtomList* list, enum AtomPrintParams params, const string const file_ref);
 AtomList* atomize(arena token_storage_arena, string str);
 
 #include "atomizer.c"

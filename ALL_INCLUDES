@@ -7,7 +7,5 @@
 #include "./libraries/safe_strings.c"
 #include "./libraries/arenas.h"
 #include "atomizer.h"
-#include "vars.h"
-#include "blocks.h"
-#include "ast_builder.c"
+#include "rpn.h"
 #endif

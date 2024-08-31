@@ -28,15 +28,15 @@ int main(int argc, char* argv[]) {
     u64 gigabyte = 1073741824 / 5;
     arena rawfile_arena = aalloc(gigabyte);
     arena token_arena = aalloc(gigabyte);
-    arena ast_arena = aalloc(gigabyte);
+    arena ass_arena = aalloc(gigabyte);
 
     string str = map_file_to_memory(rawfile_arena, argv[1]);
 
     if (str == NULL) return 1; else printf("File read in successfully\n");
 
     AtomList* atoms = atomize(token_arena, str);
-    print_atom_list(atoms, LINES);
-    build_tree(ast_arena, atoms);
+    print_atom_list(atoms, LINES | FILE_PRESENT, str);
+    generate_ass(ass_arena, atoms, str);
 
 
     afree(rawfile_arena);
