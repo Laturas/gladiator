@@ -29,11 +29,11 @@ void print_node(PolNode input, const string const file_buffer) {
         case POL_EMPTY:
             printf("Do nothing"); break;
         case POL_FUNC_START:
-            printf("Function declaration: "); print_to_next_token(input.start, file_buffer); break;
+            printf("Declare fn: "); print_to_next_token(input.start, file_buffer); break;
         case POL_INIT_FN_PARAM:
-            printf("Load as function param"); break;
+            printf("Load as fn param"); break;
         case POL_INIT_LOCAL_VAR:
-            printf("Variable declaration: "); print_to_next_token(input.start, file_buffer); break;
+            printf("Declare var: "); print_to_next_token(input.start, file_buffer); break;
         case POL_ASSIGN:
             printf("Assign"); break;
         case POL_RETURN:

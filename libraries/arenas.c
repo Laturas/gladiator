@@ -61,6 +61,12 @@ void* _apush(arena pushed_arena, const void* const obj_to_push, u64 size_of_push
     return pushed_arena.buffer + (*pushed_arena.size) - size_of_pushed_obj;
 }
 
+void pop(arena arena_to_clear, u64 pop_amount_bytes) {
+    if (pop_amount_bytes > (*arena_to_clear.size)) {printf("Cannot pop off arena, not enough bytes to pop. Exiting..."); exit(1);}
+    (*arena_to_clear.size) = (*arena_to_clear.size) + ARENA_HEADER_SIZE - pop_amount_bytes;
+    mem_commit(arena_to_clear.buffer, (*arena_to_clear.size));
+}
+
 void aclear(arena arena_to_clear) {
     VirtualFree(arena_to_clear.buffer, *arena_to_clear.size, MEM_DECOMMIT);
     mem_commit(arena_to_clear.buffer, sizeof(u64*) * 2);
