@@ -4,7 +4,12 @@
 
 #include "parse_function.c"
 
-PolNode* generate_ass(arena ass_arena, AtomList* atom_list, string file_text) {
+struct AbstractSyntaxStream {
+    PolNode* first;
+    PolNode* last;
+};
+
+struct AbstractSyntaxStream generate_ass(arena ass_arena, AtomList* atom_list, string file_text) {
     enum GlobalTypes {
         NONE,
         FUNCTION,
@@ -12,8 +17,6 @@ PolNode* generate_ass(arena ass_arena, AtomList* atom_list, string file_text) {
         OTHER,
     };
     enum GlobalTypes expect = NONE;
-
-    arena dynamic_list_arena = aalloc(8388608);
 
     Atom* atoms = atom_list->list;
     Atom* last = atom_list->listlen + atom_list->list;
@@ -46,11 +49,8 @@ PolNode* generate_ass(arena ass_arena, AtomList* atom_list, string file_text) {
                     }
 
                     PolNode* last_node = parse_function(ass_arena,&atoms,last,file_text);
-                    PolNode* start = ass_start;
-                    while (start <= last_node) {
-                        print_node((*start), file_text); printf("\n");
-                        start++;
-                    }
+                    struct AbstractSyntaxStream new = {ass_start, last_node};
+                    return new;
                     
                     expect = NONE;
                 }
@@ -58,5 +58,4 @@ PolNode* generate_ass(arena ass_arena, AtomList* atom_list, string file_text) {
             default: break;
         }
     }
-    afree(dynamic_list_arena);
 }
