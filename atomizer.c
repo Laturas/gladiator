@@ -2,12 +2,48 @@
 #include "ALL_INCLUDES"
 #endif
 
-void print_atom(Atom input_atom, enum AtomPrintParams params) {
-    if (params & LINES) {printf("Line %d: ", input_atom.line_number);}
+Token match_1(char match_char) {
+    switch (match_char) {
+        case ';': return SEMICOLON;
+        case ':': return COLON;
+        case '{': return OPEN_BRACE;
+        case '}': return CLOSE_BRACE;
+        case '(': return OPEN_PAREN;
+        case ')': return CLOSE_PAREN;
+        case '[': return OPEN_SQBRACKET;
+        case ']': return CLOSE_SQBRACKET;
+        case '.': return DOT;
+        case ',': return COMMA;
+        case '\n': return NEWLINE;
+        case ' ' : return WHITESPACE;
+
+        default: return CUSTOM;
+    }
+}
+
+unsigned int token_length(u32 start, const string const file_buffer) {
+    unsigned int len = 0;
+    while (start < file_buffer->length && match_1(file_buffer->raw_string[start++]) == CUSTOM) {
+        len++;
+    }
+    return len;
+}
+
+void print_to_next_token(u32 start, const string const file_buffer) {
+    //printf("start: %d", start);
+    while (start < file_buffer->length && match_1(file_buffer->raw_string[start]) == CUSTOM) {
+        printf("%c", file_buffer->raw_string[start++]);
+    }
+}
+
+void print_atom(Atom input_atom, enum AtomPrintParams params, const string const file) {
+    //if (params & LINES) {printf("Line %d: ", input_atom.line_number);}
 
     switch (input_atom.token) {
         case CUSTOM:
-            printf("OTHER("); print(&input_atom.extra_str); printf(")"); break;
+            if (params & FILE_PRESENT) {printf("OTHER("); print_to_next_token(input_atom.start, file); printf(")");}
+            else {printf("OTHER");}
+            break;
         case OPEN_BRACE:
             printf("{"); break;
         case CLOSE_BRACE:
@@ -45,9 +81,9 @@ void print_atom(Atom input_atom, enum AtomPrintParams params) {
     }
 }
 
-void print_atom_list(AtomList* list, enum AtomPrintParams params) {
+void print_atom_list(AtomList* list, enum AtomPrintParams params, const string const file_ref) {
     for (int i = 0; i < list->listlen; i++) {
-        print_atom(list->list[i], params); printf("\n");
+        print_atom(list->list[i], params, file_ref); printf("\n");
     }
 }
 
@@ -71,25 +107,6 @@ Token match_4(string str) {
 
 Token match_3(string str) {
 
-}
-
-Token match_1(char match_char) {
-    switch (match_char) {
-        case ';': return SEMICOLON;
-        case ':': return COLON;
-        case '{': return OPEN_BRACE;
-        case '}': return CLOSE_BRACE;
-        case '(': return OPEN_PAREN;
-        case ')': return CLOSE_PAREN;
-        case '[': return OPEN_SQBRACKET;
-        case ']': return CLOSE_SQBRACKET;
-        case '.': return DOT;
-        case ',': return COMMA;
-        case '\n': return NEWLINE;
-        case ' ' : return WHITESPACE;
-
-        default: return CUSTOM;
-    }
 }
 
 Token match(string str) {
@@ -122,13 +139,11 @@ Atom token_list_append(arena token_arena, AtomList* atomlist, Atom atom) {
     return atom;
 }
 
-Atom construct_atom(Token token, _String file_text, u64 line) {
-    _String tmp = {file_text.length, file_text.raw_string};
-    Atom return_atom = {token,tmp,line};
+Atom construct_atom(Token token, u32 location) {
+    Atom return_atom = {token,location};
     switch (token) {
         case CUSTOM:
         case INT_LITERAL:
-            return_atom.extra_str = file_text;
         default:
             return return_atom;
     }
@@ -142,7 +157,6 @@ Atom construct_atom(Token token, _String file_text, u64 line) {
 AtomList* atomize(arena token_storage_arena, string str) {
     _String newstr = {1, str->raw_string};
     AtomList* atoms;
-    u64 line_num = 1;
 
     // I don't want to accidentally modify the stack-allocated struct
     {
@@ -155,18 +169,17 @@ AtomList* atomize(arena token_storage_arena, string str) {
     while (max_bound > newstr.raw_string + newstr.length) {
         symbol = CUSTOM;
         while (prevAtom.token == ONELINE_COMMENT && (symbol = match_1(newstr.raw_string[0])) != NEWLINE && IN_BOUNDS) {newstr.raw_string++;}
-        line_num += (symbol == NEWLINE);
         if (!IN_BOUNDS) {break;}
 
         // Moves to the first non-whitespace character
         while ((symbol = match_1(newstr.raw_string[0])) == WHITESPACE) {newstr.raw_string++;}
+        u32 start = newstr.raw_string - str->raw_string;
 
         if (symbol == CUSTOM) { // Extends the length of the current token until it hits a tokenizing character
             while (!(symbol = match_1(newstr.raw_string[newstr.length])) && IN_BOUNDS) {newstr.length++;}
         }
-        line_num += (symbol == NEWLINE);
 
-        prevAtom = token_list_append(token_storage_arena, atoms, construct_atom(match(&newstr), newstr, line_num));
+        prevAtom = token_list_append(token_storage_arena, atoms, construct_atom(match(&newstr), start));
         newstr.raw_string += newstr.length;
         newstr.length = 1;
     }
