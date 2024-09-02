@@ -1,0 +1,2 @@
+gcc main.c -o glad_compile.exe -g
+gdb glad_compile.exe test.glad

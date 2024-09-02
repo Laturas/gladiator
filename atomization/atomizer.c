@@ -14,6 +14,9 @@ Token match_1(char match_char) {
         case ']': return CLOSE_SQBRACKET;
         case '.': return DOT;
         case ',': return COMMA;
+        case '-': return NEGATE;
+        case '!': return NOT;
+        case '~': return COMPLEMENT;
         case '\n': return NEWLINE;
         case ' ' : return WHITESPACE;
 
@@ -30,15 +33,12 @@ unsigned int token_length(u32 start, const string const file_buffer) {
 }
 
 void print_to_next_token(u32 start, const string const file_buffer) {
-    //printf("start: %d", start);
     while (start < file_buffer->length && match_1(file_buffer->raw_string[start]) == CUSTOM) {
         printf("%c", file_buffer->raw_string[start++]);
     }
 }
 
 void print_atom(Atom input_atom, enum AtomPrintParams params, const string const file) {
-    //if (params & LINES) {printf("Line %d: ", input_atom.line_number);}
-
     switch (input_atom.token) {
         case CUSTOM:
             if (params & FILE_PRESENT) {printf("OTHER("); print_to_next_token(input_atom.start, file); printf(")");}
@@ -70,6 +70,12 @@ void print_atom(Atom input_atom, enum AtomPrintParams params, const string const
             printf("u8"); break;
         case RETURN:
             printf("return"); break;
+        case NEGATE: 
+            printf("-"); break;
+        case NOT: 
+            printf("!"); break;
+        case COMPLEMENT:
+            printf("~"); break;
         case INT_LITERAL:
             printf("[value]"); break;
         case WHITESPACE:
@@ -133,7 +139,7 @@ Token match(string str) {
 }
 
 Atom token_list_append(arena token_arena, AtomList* atomlist, Atom atom) {
-    if (atom.token == WHITESPACE || atom.token == ONELINE_COMMENT || atom.token == NEWLINE) {return atom;} // Whitespace is not appended
+    if (atom.token >= NO_APPEND) {return atom;}
     Atom* a = apush(token_arena, atom);
     if (!(atomlist->listlen++)) {atomlist->list = a;}
     return atom;
@@ -166,16 +172,20 @@ AtomList* atomize(arena token_storage_arena, string str) {
     
     char* max_bound = str->raw_string + str->length;
     char symbol; Atom prevAtom;
+    
     while (max_bound > newstr.raw_string + newstr.length) {
         symbol = CUSTOM;
-        while (prevAtom.token == ONELINE_COMMENT && (symbol = match_1(newstr.raw_string[0])) != NEWLINE && IN_BOUNDS) {newstr.raw_string++;}
-        if (!IN_BOUNDS) {break;}
+        if (prevAtom.token == ONELINE_COMMENT) {
+            while (match_1(newstr.raw_string[0]) != NEWLINE && IN_BOUNDS) {newstr.raw_string++;}
+        }
+        if (!IN_BOUNDS) break;
 
         // Moves to the first non-whitespace character
         while ((symbol = match_1(newstr.raw_string[0])) == WHITESPACE) {newstr.raw_string++;}
         u32 start = newstr.raw_string - str->raw_string;
 
-        if (symbol == CUSTOM) { // Extends the length of the current token until it hits a tokenizing character
+        // Extends the length of the current token until it hits a tokenizing character
+        if (symbol == CUSTOM) {
             while (!(symbol = match_1(newstr.raw_string[newstr.length])) && IN_BOUNDS) {newstr.length++;}
         }
 

@@ -1,4 +1,3 @@
-#include <string.h>
 #include "arenas.h"
 
 #define EXTRA_SAFE

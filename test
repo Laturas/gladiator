@@ -1,2 +1,4 @@
-gcc main.c -o glad_compile.exe -g
-gdb glad_compile.exe test.glad
+./glad_compile.exe test.glad
+gcc -o test_output.exe output.s -nostdlib -ffreestanding
+./test_output.exe
+echo $?

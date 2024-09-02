@@ -1,4 +1,4 @@
 // This comment doesn't affect the output
-main(param : i32,) : i32 {
-    return 3;
+main(param : i32) : i32 {
+    return 5;
 }

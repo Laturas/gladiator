@@ -1,11 +1,29 @@
+/*** This file should be included by the main.c file ***/
+
 #ifndef INCLUDES
-#define INCLUDES
-#include <stdio.h>
-#include <stdlib.h>
-#include <windows.h>
-#include "./libraries/debug.c"
-#include "./libraries/safe_strings.c"
-#include "./libraries/arenas.h"
-#include "atomizer.h"
-#include "rpn.h"
+    #define INCLUDES
+
+    /* Dynamic libraries */
+    #include <stdio.h>
+    #include <windows.h>
+
+    /* Static libraries (that I made lol) */
+    /* Basically just code that I reuse elsewhere */
+    #include "./libraries/debug.c"
+    #include "./libraries/safe_strings.c"
+    #include "./libraries/arenas.h"
+
+    /* Atomization / Tokenizing */
+    #include "./atomization/atomizer.h"
+
+    /* Semantic stream dependencies */
+    #include "./parsing/error_handling.h"
+    #include "./parsing/rev_polish_notation.h"
+
+    /* Parsing */
+    #include "./parsing/parse_function.c"
+    #include "./parsing/semantic_stream.c"
+
+    /* Assembling */
+    #include "assembler.c"
 #endif

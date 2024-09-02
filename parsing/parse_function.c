@@ -2,6 +2,8 @@
 #include "ALL_INCLUDES"
 #endif
 
+#define BOUNDS_CHECK if (next >= bound) { error_on(next->start, file_text, PARSING_ERROR); printf("Parsing error: file terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1); }
+
 void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound, const string const file_text) {
     enum HeaderExpectations {
         EXPECT_DEFAULT, // Expect end of params, or start of next param 
@@ -17,7 +19,7 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound, const str
     Atom* start = *atoms;
     while (1) {
         Atom* next = (*atoms)++;
-        if (next >= bound) {error_on(next->start, file_text, PARSING_ERROR); printf("File terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
+        BOUNDS_CHECK
         switch (next->token) {
             case CUSTOM:
                 switch (current_stage) {
@@ -91,15 +93,12 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound, const str
                 }
             break;
             default: 
-            printf("parsing error: Unexpected token: "); 
-            print_atom(*next, 0, NULL); 
-            printf("\nToken value: %d\n", next->token);
+            error_on(next->start, file_text, PARSING_ERROR); printf("Unexpected token: "); 
+            print_atom(*next, 0, NULL);
             exit(1);
         }
     }
 }
-
-#define BOUNDS_CHECK if (next >= bound) {printf("Parsing error: file terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
 
 void parse_function_returns(arena ass_arena, Atom** atoms, Atom* bound, const string const file_text) {
     while (1) {
@@ -202,15 +201,15 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
     afree(operator_stack);
     return last;
 }
-#undef BOUNDS_CHECK
 
 PolNode* parse_function(arena ass_arena, Atom** atoms, Atom* bound, const string const file_text) {
     parse_function_header(ass_arena, atoms, bound, file_text);
     Atom* next = (*atoms)++;
-    if (next >= bound) {printf("Parsing error: file terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
+    BOUNDS_CHECK
     if (next->token == COLON) {
         parse_function_returns(ass_arena, atoms, bound, file_text);
     }
     else if (next->token != OPEN_BRACE) {printf("Parsing error: Illegal start of function"); exit(1);}
     return parse_tokens_into_nodes(ass_arena, atoms, bound, file_text);
 }
+#undef BOUNDS_CHECK

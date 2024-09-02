@@ -1,6 +1,12 @@
 {
     "files.associations": {
         "all_includes": "c",
-        "arenas.h": "c"
+        "arenas.h": "c",
+        "stdlib.h": "c",
+        "windows.h": "c",
+        "rpn.h": "c",
+        "stdio.h": "c",
+        "atomizer.h": "c",
+        "rev_polish_notation.h": "c"
     }
 }

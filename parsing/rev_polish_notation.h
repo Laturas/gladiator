@@ -46,5 +46,3 @@ void print_node(PolNode input, const string const file_buffer) {
 }
 
 static void test() {sizeof(PolNode);}
-
-#include "semantic_stream.c"

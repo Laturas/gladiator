@@ -1,0 +1,1 @@
+gcc main.c -o glad_compile.exe -O2 -s -fno-ident -fno-asynchronous-unwind-tables

@@ -26,11 +26,19 @@ enum Token {
     I32,
     U8,
 
+    // Unary operators
+    NEGATE, // -
+    NOT, // !
+    COMPLEMENT, // ~
+
+
     RETURN,
     INT_LITERAL,
+
+    /** Non-appending tokens are tokens that won't make it to the final stream. This includes whitespace, newlines, and comment markers. */
+    NO_APPEND,
     WHITESPACE,
     NEWLINE,
-
     ONELINE_COMMENT,
 } typedef Token;
 
