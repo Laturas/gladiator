@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 
     string str = map_file_to_memory(rawfile_arena, argv[1]);
 
-    if (str == NULL) return 1; else printf("File read in successfully\n");
+    if (str == NULL) return 1; //else printf("File read in successfully\n");
 
     AtomList* atoms = atomize(token_arena, str);
     //print_atom_list(atoms, LINES | FILE_PRESENT, str);

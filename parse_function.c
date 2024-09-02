@@ -2,7 +2,7 @@
 #include "ALL_INCLUDES"
 #endif
 
-void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound) {
+void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound, const string const file_text) {
     enum HeaderExpectations {
         EXPECT_DEFAULT, // Expect end of params, or start of next param 
         EXPECT_VARNAME, // Expect name of variable (only comes after a comma is seen)
@@ -17,7 +17,7 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound) {
     Atom* start = *atoms;
     while (1) {
         Atom* next = (*atoms)++;
-        if (next >= bound) {printf("Parsing error: file terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
+        if (next >= bound) {error_on(next->start, file_text, PARSING_ERROR); printf("File terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
         switch (next->token) {
             case CUSTOM:
                 switch (current_stage) {
@@ -27,19 +27,23 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound) {
                         to_push.type = POL_INIT_FN_PARAM;
                         current_stage = COLON;
                     break;
-                    default: printf("Parsing error: custom types are currently not supported\n"); exit(1);
+                    case EXPECT_VARTYPE:
+                        error_on(next->start, file_text, PARSING_ERROR); printf("Custom types are currently not supported\n"); exit(1);
+                    case EXPECT_COLON: 
+                        error_on(next->start, file_text, PARSING_ERROR); printf("Custom types are currently not supported - but you also forgot the : separator\n"); exit(1);
+                    default: 
                 }
             break;
             case COLON:
                 switch (current_stage) {
                     case COLON: current_stage = EXPECT_VARTYPE; break;
-                    default: printf("Parsing error: Expected colon separator but found something else\n"); exit(1);
+                    default: error_on(next->start, file_text, PARSING_ERROR); printf("Expected colon separator but found something else\n"); exit(1);
                 }
             break;
             case I32:
                 switch (current_stage) {
                     case EXPECT_VARTYPE: current_stage = EXPECT_END; break;
-                    default: printf("Parsing error: Found something other than a type when a type was expected\n"); exit(1);
+                    default: error_on(next->start, file_text, PARSING_ERROR); printf("Found something other than a type when a type was expected\n"); exit(1);
                 }
             break;
             case CLOSE_PAREN:
@@ -55,7 +59,16 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound) {
                         }
                         return;
                     break;
-                    default: printf("Parsing error: Unexpected termination\n"); exit(1);
+                    case EXPECT_VARNAME: 
+                        error_on(next->start, file_text, PARSING_ERROR); printf("Expected variable identifier, but found end of function parameters\n"); 
+                        exit(1);
+                    case EXPECT_COLON: 
+                        error_on(next->start, file_text, PARSING_ERROR); printf("Expected : separator and variable type, but found end of function parameters\n"); 
+                        exit(1);
+                    case EXPECT_VARTYPE: 
+                        error_on(next->start, file_text, PARSING_ERROR); printf("Expected variable type but found end of function parameters\n"); 
+                        exit(1);
+                    default: error_on(next->start, file_text, PARSING_ERROR); printf("Unexpected termination\n"); exit(1);
                 }
             break;
             case COMMA: switch (current_stage) {
@@ -71,10 +84,10 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound) {
                             current_stage = EXPECT_VARNAME;
                             break;
                         } else {
-                            printf("Parsing error: Variable unexpectedly ended!\n"); exit(1);
+                            error_on(next->start, file_text, PARSING_ERROR); printf("Variable unexpectedly ended!\n"); exit(1);
                         }
                     break;
-                    default: printf("Parsing error: Unexpected termination\n"); exit(1);
+                    default: error_on(next->start, file_text, PARSING_ERROR); printf("Unexpected termination\n"); exit(1);
                 }
             break;
             default: 
@@ -88,7 +101,7 @@ void parse_function_header(arena ass_arena, Atom** atoms, Atom* bound) {
 
 #define BOUNDS_CHECK if (next >= bound) {printf("Parsing error: file terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
 
-void parse_function_returns(arena ass_arena, Atom** atoms, Atom* bound) {
+void parse_function_returns(arena ass_arena, Atom** atoms, Atom* bound, const string const file_text) {
     while (1) {
         Atom* next = (*atoms)++;
         BOUNDS_CHECK
@@ -99,7 +112,7 @@ void parse_function_returns(arena ass_arena, Atom** atoms, Atom* bound) {
                 el_star->type = POL_APPEND_RETURN_TYPE;
                 el_star->start = next->start;
                 break;
-            default: printf("Illegal function return type: "); print_atom(*next,0,NULL); exit(1);
+            default: error_on(next->start, file_text, PARSING_ERROR); printf("Illegal function return type: "); print_atom(*next,0,NULL); exit(1);
         }
         next = (*atoms)++;
         BOUNDS_CHECK
@@ -108,7 +121,7 @@ void parse_function_returns(arena ass_arena, Atom** atoms, Atom* bound) {
                 break;
             case OPEN_BRACE:
                 return;
-            default: printf("Illegal item in function return type: "); print_atom(*next,0,NULL); exit(1);
+            default: error_on(next->start, file_text, PARSING_ERROR); printf("Illegal item in function return type: "); print_atom(*next,0,NULL); exit(1);
         }
     }
 
@@ -192,11 +205,11 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
 #undef BOUNDS_CHECK
 
 PolNode* parse_function(arena ass_arena, Atom** atoms, Atom* bound, const string const file_text) {
-    parse_function_header(ass_arena, atoms, bound);
+    parse_function_header(ass_arena, atoms, bound, file_text);
     Atom* next = (*atoms)++;
     if (next >= bound) {printf("Parsing error: file terminates early at function definition. next = %p, bound = %p\n", next, bound); exit(1);}
     if (next->token == COLON) {
-        parse_function_returns(ass_arena, atoms, bound);
+        parse_function_returns(ass_arena, atoms, bound, file_text);
     }
     else if (next->token != OPEN_BRACE) {printf("Parsing error: Illegal start of function"); exit(1);}
     return parse_tokens_into_nodes(ass_arena, atoms, bound, file_text);
