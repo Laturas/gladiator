@@ -143,9 +143,30 @@ bool is_number(u32 start, const string const file_text) {
 
 int get_operator_priority(PolType type) {
     switch (type) {
-        case RETURN: return 1;
+        case POL_NOT:
+        case POL_NEGATE:
+        case POL_COMPLEMENT: return 3;
+
+        case POL_ADD: return 2;
+
+        case POL_ASSIGN:
+        case POL_RETURN: return 1;
+
         default: return 0;
     }
+}
+
+void pop_ops_until_priority(arena output_arena, arena operator_stack, PolNode* operators, u32* operator_count, int priority) {
+    PolNode empty = {0};
+    u32 count = *operator_count;
+    while (get_operator_priority(operators[count].type) > priority) {
+        PolNode* pushed = apush(output_arena, empty);
+        pushed->type = operators[count].type;
+        pushed->start = operators[count].start;
+        count--;
+        pop(operator_stack,sizeof(PolNode));
+    }
+    *operator_count = count;
 }
 
 PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, const string const file_text) {
@@ -164,33 +185,60 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
         {
             case CUSTOM:
                 if (is_number(next->start, file_text)) {
-                    PolNode* pushed = apush(output_arena, empty);
-                    pushed->type = POL_LITERAL;
-                    pushed->start = next->start;
-                    last = pushed;
+                    last = apush(output_arena, empty);
+                    last->type = POL_LITERAL;
+                    last->start = next->start;
                 }
                 else {
-                    PolNode* pushed = apush(output_arena, empty);
-                    pushed->type = POL_VAR;
-                    pushed->start = next->start;
-                    last = pushed;
+                    last = apush(output_arena, empty);
+                    last->type = POL_VAR;
+                    last->start = next->start;
                 }
             break;
             case RETURN:
-                if (count == 0) {
-                    PolNode* pushed = apush(operator_stack, empty);
-                    pushed->type = POL_RETURN;
+                {
+                    last = apush(operator_stack, empty);
+                    last->type = POL_RETURN;
                     count++;
                 }
             break;
+            case NEGATE:
+                {
+                    last = apush(operator_stack, empty);
+                    last->type = POL_NEGATE;
+                    count++;
+                }
+            break;
+            case NOT:
+                {
+                    last = apush(operator_stack, empty);
+                    last->type = POL_NOT;
+                    count++;
+                }
+            break;
+            case COMPLEMENT:
+                if (count > 0 && get_operator_priority(operators[count].type) > get_operator_priority(POL_COMPLEMENT)) {
+                    pop_ops_until_priority(output_arena, operator_stack, operators, &count, get_operator_priority(POL_COMPLEMENT));
+                }
+                last = apush(operator_stack, empty);
+                last->type = POL_COMPLEMENT;
+                count++;
+            break;
+            case PLUS:
+                if (count > 0 && get_operator_priority(operators[count].type) > get_operator_priority(POL_ADD)) {
+                    pop_ops_until_priority(output_arena, operator_stack, operators, &count, get_operator_priority(POL_ADD));
+                }
+                last = apush(operator_stack, empty);
+                last->type = POL_ADD;
+                count++;
+            break;
             case SEMICOLON:
                 while (count > 0) {
-                    PolNode* pushed = apush(output_arena, empty);
-                    pushed->type = operators[count].type;
-                    pushed->start = operators[count].start;
+                    last = apush(output_arena, empty);
+                    last->type = operators[count].type;
+                    last->start = operators[count].start;
                     count--;
                     pop(operator_stack,sizeof(PolNode));
-                    last = pushed;
                 }
             break;
             default:

@@ -1,4 +1,5 @@
 ./glad_compile.exe test.glad
 gcc -o test_output.exe output.s -nostdlib -ffreestanding
 ./test_output.exe
+
 echo $?

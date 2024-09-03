@@ -63,7 +63,7 @@ void* _apush(arena pushed_arena, const void* const obj_to_push, u64 size_of_push
 
 void pop(arena arena_to_clear, u64 pop_amount_bytes) {
     if (pop_amount_bytes > (*arena_to_clear.size)) {printf("Cannot pop off arena, not enough bytes to pop. Exiting..."); exit(1);}
-    (*arena_to_clear.size) = (*arena_to_clear.size) + ARENA_HEADER_SIZE - pop_amount_bytes;
+    (*arena_to_clear.size) = (*arena_to_clear.size) - pop_amount_bytes;
     mem_commit(arena_to_clear.buffer, (*arena_to_clear.size));
 }
 

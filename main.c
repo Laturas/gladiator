@@ -23,6 +23,14 @@ string map_file_to_memory(arena aren, char* file) {
     return filestr;
 }
 
+static void print_node_list(struct AbstractSyntaxStream ass, const string const str) {
+    PolNode* first_cp = ass.first;
+    while (first_cp <= ass.last) {
+        print_node(*first_cp, str); printf("\n");
+        first_cp++;
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) { printf("Usage: ./<exe> <source file>\n"); return 1; }
     u64 gigabyte = 1073741824 / 6;
@@ -37,11 +45,7 @@ int main(int argc, char* argv[]) {
     AtomList* atoms = atomize(token_arena, str);
     //print_atom_list(atoms, LINES | FILE_PRESENT, str);
     struct AbstractSyntaxStream ass = generate_ass(ass_arena, atoms, str);
-    //PolNode* first_cp = ass.first;
-    //while (first_cp <= ass.last) {
-    //    print_node(*first_cp, str); printf("\n");
-    //    first_cp++;
-    //}
+    //print_node_list(ass, str);
 
     generate_assembly(ass, str);
 

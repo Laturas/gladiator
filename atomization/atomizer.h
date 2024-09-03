@@ -31,6 +31,9 @@ enum Token {
     NOT, // !
     COMPLEMENT, // ~
 
+    // Binary operators
+    PLUS, // +
+
 
     RETURN,
     INT_LITERAL,

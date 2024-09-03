@@ -12,8 +12,16 @@ typedef enum PolTypes {
     POL_LITERAL,
     POL_VAR,
     POL_APPEND_RETURN_TYPE, // Appends a return type to the current function
+    
     POL_LPAREN, // (
     POL_RPAREN, // )
+
+    // Unary operators
+    POL_NEGATE, // -
+    POL_COMPLEMENT, // ~
+    POL_NOT, // !
+
+    POL_ADD, // +
 } PolType;
 
 #ifndef u32
@@ -42,6 +50,14 @@ void print_node(PolNode input, const string const file_buffer) {
             print_to_next_token(input.start, file_buffer); break;
         case POL_APPEND_RETURN_TYPE:
             printf("Append return type to current function: "); print_to_next_token(input.start, file_buffer); break;
+        case POL_NEGATE:
+            printf("Negate"); break;
+        case POL_COMPLEMENT:
+            printf("Complement"); break;
+        case POL_NOT:
+            printf("Not"); break;
+        case POL_ADD:
+            printf("Add"); break;
     }
 }
 
