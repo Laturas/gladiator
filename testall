@@ -1,6 +1,0 @@
-./build
-for VARIABLE in 1 2 3 4
-do
-    ./glad_compile.exe ./testcases/testcase_00$VARIABLE.glad
-    python test.py 00$VARIABLE
-done

@@ -1,5 +1,6 @@
-./glad_compile.exe test.glad
-gcc -o test_output.exe output.s -nostdlib -ffreestanding
-./test_output.exe
-
-echo $?
+./build
+for VARIABLE in 1 2 3 4
+do
+    ./glad_compile.exe ./testcases/testcase_00$VARIABLE.glad
+    python ./testcases/test.py 00$VARIABLE
+done
