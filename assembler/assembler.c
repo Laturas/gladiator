@@ -20,24 +20,6 @@ int get_int_literal(u32 start, const string const file_str) {
     return atoi(buffer);
 }
 
-//void write_to_asm(arena asm_arena, _String to_write) {
-//    char* pushed = apush_size(asm_arena, to_write.raw_string, to_write.length);
-//    for (int i = 0; i < to_write.length; i++) {
-//        pushed[i] = to_write.raw_string[i];
-//    }
-//}
-//void write_token_to_asm(arena asm_arena, u32 start, const string const file_str) {
-//    int i = start;
-//    while (match_1(file_str->raw_string[i]) != CUSTOM) {
-//        i++;
-//    }
-//    char* element = file_str->raw_string[start];
-//    char* pushed = apush_size(asm_arena, element, i - start);
-//    for (int j = start; j < i + start; j++) {
-//        pushed[j] = file_str->raw_string[j];
-//    }
-//}
-//
 static void print_register(enum Register reg_to_print, bool newline) {
     switch (reg_to_print) {
         case NO_REGISTER:
@@ -58,45 +40,6 @@ static void print_register(enum Register reg_to_print, bool newline) {
     }
     if (newline) {printf("\n");}
 }
-//
-//void generate_assembly(struct AbstractSyntaxStream ass, const string const file_str) {
-//    arena asm_arena = aalloc(4194304);
-//    string asm_string = newstr(asm_arena);
-//
-//    enum Register current = NO_REGISTER;
-//    PolNode* first_cp = ass.first;
-//    
-//    while (first_cp <= ass.last) {
-//        switch (first_cp->type) {
-//            case POL_FUNC_START:
-//                printf("	.globl	__"); print_to_next_token(first_cp->start,file_str); printf("\n__");
-//                print_to_next_token(first_cp->start,file_str); printf(":\n");
-//            break;
-//            case POL_LITERAL:
-//                current++;
-//                printf("	movl   $"); printf("0x%x, ",get_int_literal(first_cp->start, file_str)); print_register(current, true);
-//            break;
-//            case POL_NEGATE:
-//                printf(" 	neg    "); print_register(current, true);
-//            break;
-//            case POL_COMPLEMENT:
-//                printf(" 	not    "); print_register(current, true);
-//            break;
-//            case POL_NOT:
-//                printf(" 	cmpl   $0, "); print_register(current, true);
-//                printf(" 	movl   $0, "); print_register(current, true); // Using xor clears the flags and thus can't be used to zero eax :c
-//                printf(" 	sete   %%al\n");
-//            break;
-//            case POL_ADD:
-//                printf(" 	addl   "); print_register(current, false); printf(", "); print_register(--current,true);
-//            break;
-//            case POL_RETURN:
-//                printf(" 	ret\n");
-//            break;
-//        }
-//        first_cp++;
-//    }
-//}
 
 #define ADVANCE_DATA while (first_data->type != POL_LITERAL && first_data < ass.last) {first_data++;}
 #define MOVE_IF_NOT(register) if (current == register) {ADVANCE_DATA printf("	movl   $"); printf("0x%x, ",get_int_literal(first_data->start, file_str)); print_register(register + 1, true); current = register + 1; first_data++;}
@@ -188,12 +131,10 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
             case POL_COMPLEMENT:
             case POL_NOT:
                 if (OP_STACK_TOP == current_item->type && DATA_STACK_TOP.unaries > 0) {
-                    fprintf(console, "Removing from stack :(\n");
                     next_unop_index--;
                     DATA_STACK_TOP.unaries -= 1;
                     break;
                 }
-                fprintf(console, "Adding to stack :D\n");
                 unary_operator_stack[next_unop_index++] = current_item->type;
                 DATA_STACK_TOP.unaries += 1;
             break;
@@ -207,14 +148,13 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                             printf("	movl   $0x%x, ", compiler_stack[next_item_index - offset].value);
                             print_register(current_in_use_register, true);
                             out_register = current_in_use_register;
-                            //fprintf(console, "Moved item to register %d\n", current_in_use_register);
                         }
                         apply_unaries(console, out_register, unary_operator_stack, next_unop_index, compiler_stack[next_item_index - offset].unaries);
                         next_unop_index -= compiler_stack[next_item_index - offset].unaries;
                         compiler_stack[next_item_index - offset].unaries = 0;
                     }
                 }
-                fprintf(console, "Case %d\n\n", item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register) + item_is_in_register(current_in_use_register, next_item_index - 2, held_registers, &out_register));
+                //fprintf(console, "Case %d\n\n", item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register) + item_is_in_register(current_in_use_register, next_item_index - 2, held_registers, &out_register));
                 switch (item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register) 
                        + item_is_in_register(current_in_use_register, next_item_index - 2, held_registers, &out_register)
                     ) {
@@ -258,7 +198,6 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                     printf("	movl   $0x%x, ", DATA_STACK_TOP.value);
                     print_register(current_in_use_register, true);
                     out_register = current_in_use_register;
-                    //fprintf(console, "Moved item to register %d\n", current_in_use_register);
                 }
                 apply_unaries(console, out_register, unary_operator_stack, next_unop_index, DATA_STACK_TOP.unaries);
                 printf(" 	ret\n");
@@ -271,90 +210,4 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
         }
         current_item++;
     }
-}
-
-void generate_assembly(struct AbstractSyntaxStream ass, const string const file_str) {
-    enum Register current = NO_REGISTER;
-    freopen("output.s", "w", stdout);
-    FILE* console = fopen("console.txt", "w");
-    PolNode* first_data = ass.first;
-    PolNode* first_operation = ass.first;
-    while (first_operation <= ass.last) {
-        //fprint_node(console,*first_operation,file_str); fprintf(console, " | "); fprint_node(console,*first_data,file_str); fprintf(console, "\n");
-        //fprintf(console, "\nfirst_operation: %d\nfirst_data: %d\n", first_operation - ass.first, first_data - ass.first);
-        switch (first_operation->type) {
-            case POL_FUNC_START:
-                printf("	.globl	__"); print_to_next_token(first_operation->start,file_str); printf("\n__");
-                print_to_next_token(first_operation->start,file_str); printf(":\n");
-            break;
-            case POL_LITERAL: break;
-            case POL_NEGATE:
-                MOVE_IF_NOT(NO_REGISTER)
-                printf(" 	neg    "); print_register(current, true);
-                current++;
-            break;
-            case POL_COMPLEMENT:
-                MOVE_IF_NOT(NO_REGISTER)
-                printf(" 	not    "); print_register(current, true);
-                current++;
-            break;
-            case POL_NOT:
-                MOVE_IF_NOT(NO_REGISTER)
-                printf(" 	cmpl   $0, "); print_register(EAX, true);
-                printf(" 	movl   $0, "); print_register(EAX, true); // Using xor clears the flags and thus can't be used to zero eax :c
-                printf(" 	sete   %%al\n");
-            break;
-            case POL_ADD:
-                MOVE_IF_NOT(NO_REGISTER)
-                if (current == EAX) {
-                    ADVANCE_DATA
-
-                    printf("	movl   $"); printf("0x%x, ",get_int_literal(first_data->start, file_str)); print_register(EBX, true);
-                    current = EBX;
-                    first_data++;
-                }
-                printf(" 	addl   "); print_register(current - 1, false); printf(", "); print_register(current, true);
-                current--;
-            break;
-            case POL_RETURN:
-                printf(" 	ret\n");
-            break;
-            case POL_ENDSTATEMENT:
-                current = NO_REGISTER;
-            break;
-            default: break;
-        }
-        first_operation++;
-    }
-    //while (first_data <= ass.last) {
-    //    switch (first_data->type) {
-    //        case POL_FUNC_START:
-    //            printf("	.globl	__"); print_to_next_token(first_data->start,file_str); printf("\n__");
-    //            print_to_next_token(first_data->start,file_str); printf(":\n");
-    //        break;
-    //        case POL_LITERAL:
-    //            first_operation = first_data;
-    //            while (first_operation->type != POL_LITERAL) {first_operation++;}
-    //            printf("	movl   $"); printf("0x%x, ",get_int_literal(first_data->start, file_str)); print_register(current, true);
-    //        break;
-    //        case POL_NEGATE:
-    //            printf(" 	neg    "); print_register(current, true);
-    //        break;
-    //        case POL_COMPLEMENT:
-    //            printf(" 	not    "); print_register(current, true);
-    //        break;
-    //        case POL_NOT:
-    //            printf(" 	cmpl   $0, "); print_register(current, true);
-    //            printf(" 	movl   $0, "); print_register(current, true); // Using xor clears the flags and thus can't be used to zero eax :c
-    //            printf(" 	sete   %%al\n");
-    //        break;
-    //        case POL_ADD:
-    //            printf(" 	addl   "); print_register(current, false); printf(", "); print_register(--current,true);
-    //        break;
-    //        case POL_RETURN:
-    //            printf(" 	ret\n");
-    //        break;
-    //    }
-    //    first_data++;
-    //}
 }

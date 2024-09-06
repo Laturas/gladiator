@@ -10,19 +10,14 @@ Unary operators: []
 Unary operator counts: []
 Unary operators: []
 Unary operator counts: [0]
-Adding to stack :D
 Unary operators: [Complement]
 Unary operator counts: [1]
-Removing from stack :(
 Unary operators: []
 Unary operator counts: [0]
-Adding to stack :D
 Unary operators: [Complement]
 Unary operator counts: [1]
-Removing from stack :(
 Unary operators: []
 Unary operator counts: [0]
-Adding to stack :D
 Unary operators: [Complement]
 Unary operator counts: [1]
 Unary operators: [Complement]
