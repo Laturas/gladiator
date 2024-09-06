@@ -134,7 +134,7 @@ typedef enum bool {
 bool is_number(u32 start, const string const file_text) {
     u32 len = token_length(start,file_text);
     for (int i = start; i < start + len; i++) {
-        if (file_text->raw_string[i] > '9' || file_text->raw_string[i] < '1') {
+        if (file_text->raw_string[i] > '9' || file_text->raw_string[i] < '0') {
             return false;
         }
     }
@@ -169,6 +169,7 @@ void pop_ops_until_priority(arena output_arena, arena operator_stack, PolNode* o
     *operator_count = count;
 }
 
+
 PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, const string const file_text) {
     arena operator_stack = aalloc(4096);
 
@@ -195,22 +196,19 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
                     last->start = next->start;
                 }
             break;
-            case RETURN:
-                {
+            case RETURN: {
                     last = apush(operator_stack, empty);
                     last->type = POL_RETURN;
                     count++;
                 }
             break;
-            case NEGATE:
-                {
+            case NEGATE: {
                     last = apush(operator_stack, empty);
                     last->type = POL_NEGATE;
                     count++;
                 }
             break;
-            case NOT:
-                {
+            case NOT: {
                     last = apush(operator_stack, empty);
                     last->type = POL_NOT;
                     count++;
@@ -240,6 +238,8 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
                     count--;
                     pop(operator_stack,sizeof(PolNode));
                 }
+                last = apush(output_arena, empty);
+                last->type = POL_ENDSTATEMENT;
             break;
             default:
                 break;

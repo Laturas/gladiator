@@ -1,0 +1,21 @@
+Unary operators: [Complement, Complement]
+Unary operator counts: [2, 0, 0, 0, 0, 0]
+Case 0
+
+Unary operators: [Complement, Complement]
+Unary operator counts: [2, 0, 0, 0, 0]
+Case 1
+
+Unary operators: [Complement, Complement]
+Unary operator counts: [2, 0, 0, 0]
+Case 1
+
+Unary operators: [Complement, Complement]
+Unary operator counts: [2, 0, 0]
+Case 1
+
+Unary operators: [Complement, Complement]
+Unary operator counts: [2, 0]
+Moved item to register 2
+Case 2
+

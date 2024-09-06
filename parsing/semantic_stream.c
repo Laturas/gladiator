@@ -29,9 +29,7 @@ struct AbstractSyntaxStream generate_ass(arena ass_arena, AtomList* atom_list, s
                 if (expect == NONE) {
                     saved_start = current_atom->start;
                     expect = FUNCTION;
-                    break;
                 }
-                //printf("Parsing error on line %d: Unexpected token: ", current_atom->line_number); print_atom(*current_atom, 0); exit(1);
                 break;
             case OPEN_PAREN:
                 if (expect == FUNCTION) {

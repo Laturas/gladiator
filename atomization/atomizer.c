@@ -38,6 +38,11 @@ void print_to_next_token(u32 start, const string const file_buffer) {
         printf("%c", file_buffer->raw_string[start++]);
     }
 }
+void fprint_to_next_token(FILE* out, u32 start, const string const file_buffer) {
+    while (start < file_buffer->length && match_1(file_buffer->raw_string[start]) == CUSTOM) {
+        fprintf(out, "%c", file_buffer->raw_string[start++]);
+    }
+}
 
 void print_atom(Atom input_atom, enum AtomPrintParams params, const string const file) {
     switch (input_atom.token) {

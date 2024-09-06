@@ -25,5 +25,5 @@
     #include "./parsing/semantic_stream.c"
 
     /* Assembling */
-    #include "assembler.c"
+    #include "./assembler/assembler.h"
 #endif

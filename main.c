@@ -46,8 +46,9 @@ int main(int argc, char* argv[]) {
     //print_atom_list(atoms, LINES | FILE_PRESENT, str);
     struct AbstractSyntaxStream ass = generate_ass(ass_arena, atoms, str);
     //print_node_list(ass, str);
+    //printf("----------------END COMPILER OUTPUT----------------\n");
 
-    generate_assembly(ass, str);
+    generate_asm(ass, str);
 
     afree(rawfile_arena);
     afree(token_arena);

@@ -4,3 +4,4 @@ echo "Gladiator compiler re-compiled"
 gcc -o test_output.exe output.s -nostdlib -ffreestanding
 ./test_output.exe
 echo $?
+cat console.txt
