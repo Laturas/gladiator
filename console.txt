@@ -1,24 +1,29 @@
-Unary operators: [Complement, Not, Complement, Not, Negate]
-Unary operator counts: [2, 0, 1, 1, 0, 1]
-Moved item to register 1
-Case 1
-
-Unary operators: [Complement, Not, Complement, Not]
-Unary operator counts: [2, 0, 1, 1, 0]
-Moved item to register 2
-Case 2
-
-Unary operators: [Complement, Not, Complement]
-Unary operator counts: [2, 0, 1, 0]
-Moved item to register 2
-Case 2
-
-Unary operators: [Complement, Not]
-Unary operator counts: [2, 0, 0]
-Case 1
-
-Unary operators: [Complement, Not]
-Unary operator counts: [2, 0]
-Moved item to register 2
-Case 2
-
+Unary operators: []
+Unary operator counts: []
+Unary operators: []
+Unary operator counts: []
+Unary operators: []
+Unary operator counts: []
+Unary operators: []
+Unary operator counts: []
+Unary operators: []
+Unary operator counts: []
+Unary operators: []
+Unary operator counts: [0]
+Adding to stack :D
+Unary operators: [Complement]
+Unary operator counts: [1]
+Removing from stack :(
+Unary operators: []
+Unary operator counts: [0]
+Adding to stack :D
+Unary operators: [Complement]
+Unary operator counts: [1]
+Removing from stack :(
+Unary operators: []
+Unary operator counts: [0]
+Adding to stack :D
+Unary operators: [Complement]
+Unary operator counts: [1]
+Unary operators: [Complement]
+Unary operator counts: [1]
