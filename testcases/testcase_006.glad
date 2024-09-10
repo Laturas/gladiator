@@ -1,4 +1,5 @@
-// This comment doesn't affect the output
+// Testcase to make sure complement operators cancel
+// should result in equivalent asm to returning 1.
 main (param : i32) : i32 {
     return ~~~~~~1;
 }

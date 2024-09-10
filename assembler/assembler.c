@@ -54,9 +54,13 @@ bool item_is_in_register(enum Register current_in_use_register, int item_index, 
     return false;
 }
 
-void apply_unaries(FILE* output, enum Register reg, PolType* unary_operator_stack, int next_unop_index, int amount_to_apply) {
-    for (int i = amount_to_apply; i > 0; i--) {
-        switch (unary_operator_stack[next_unop_index - i]) {
+void apply_unaries(FILE* output, enum Register reg, PolType* unary_operator_stack, int first_unop_index, int amount_to_apply) {
+    //fprintf(output, "Item has to have %d unaries applied\n", amount_to_apply);
+    for (int i = 0; i < amount_to_apply; i++) {
+        PolNode tmp = {unary_operator_stack[first_unop_index + i], 0};
+
+        //fprintf(output, "Applying unary: "); fprint_node(output, tmp, NULL); fprintf(output, "\n");
+        switch (unary_operator_stack[first_unop_index + i]) {
             case POL_NEGATE:
                 printf(" 	neg    "); print_register(reg, true);
             break;
@@ -77,13 +81,13 @@ struct AsmItem {
     int value;
 };
 
-void fprint_comp_stacks(FILE* output, struct AsmItem* compiler_stack, PolType* unary_operator_stack, int next_item_index, int next_unop_index, const string const file_str) {
+void fprint_comp_stacks(FILE* output, struct AsmItem* compiler_stack, PolType* unary_operator_stack, int first_item_index, int next_item_index, int next_unop_index, const string const file_str) {
     fprintf(output, "Unary operators: [");
     if (next_unop_index) {
         PolNode wrapper = {unary_operator_stack[0], 0};
         fprint_node(output, wrapper, file_str);
     }
-    for (int i = 1; i < next_unop_index; i++) {
+    for (int i = first_item_index; i < next_unop_index; i++) {
         PolNode wrapper = {unary_operator_stack[i], 0};
         fprintf(output, ", ");
         fprint_node(output, wrapper, file_str);
@@ -93,11 +97,25 @@ void fprint_comp_stacks(FILE* output, struct AsmItem* compiler_stack, PolType* u
     if (next_item_index) {
         fprintf(output, "%d", compiler_stack[0].unaries);
     }
-    for (int i = 1; i < next_item_index; i++) {
+    for (int i = first_item_index; i < next_item_index; i++) {
         fprintf(output, ", ");
         fprintf(output, "%d", compiler_stack[i].unaries);
     }
     fprintf(output, "]\n");
+}
+
+bool prepare_for_binop(struct AsmItem* item_ref, int item_index, enum Register* register_reference, enum Register* registers) {
+    enum Register _;
+    struct AsmItem item = *item_ref;
+    if (item.unaries > 0) {
+        if (!item_is_in_register(*register_reference, item_index, registers, &_)) {
+            registers[++(*register_reference)] = item_index;
+            printf("	movl   $0x%x, ", item.value);
+            print_register((*register_reference), true);
+        }
+        return true;
+    }
+    return false;
 }
 
 void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) {
@@ -108,15 +126,16 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
     int next_item_index = 0;
     int next_unop_index = 0;
 
-    #define DATA_STACK_TOP compiler_stack[next_item_index - 1]
-    #define OP_STACK_TOP unary_operator_stack[next_unop_index - 1]
+    int first_item_index = 0; // TODO: Prevent overflow
+    int first_uop_index = 0;
+
 
     freopen("output.s", "w", stdout);
     FILE* console = fopen("console.txt", "w");
     PolNode* current_item = ass.first;
 
     while (current_item <= ass.last) {
-        fprint_comp_stacks(console, &(*compiler_stack), &(*unary_operator_stack), next_item_index, next_unop_index, file_str);
+        //fprint_comp_stacks(console, &(*compiler_stack), &(*unary_operator_stack), first_item_index, next_item_index, next_unop_index, file_str);
         switch (current_item->type) {
             case POL_FUNC_START:
                 printf("	.globl	__"); print_to_next_token(current_item->start, file_str); printf("\n__");
@@ -130,76 +149,87 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
             case POL_NEGATE:
             case POL_COMPLEMENT:
             case POL_NOT:
-                if (OP_STACK_TOP == current_item->type && DATA_STACK_TOP.unaries > 0) {
+                if (unary_operator_stack[next_unop_index - 1] == current_item->type && compiler_stack[next_item_index - 1].unaries > 0) {
                     next_unop_index--;
-                    DATA_STACK_TOP.unaries -= 1;
+                    compiler_stack[next_item_index - 1].unaries -= 1;
                     break;
                 }
                 unary_operator_stack[next_unop_index++] = current_item->type;
-                DATA_STACK_TOP.unaries += 1;
+                compiler_stack[next_item_index - 1].unaries += 1;
             break;
             case POL_ADD: {
-                //fprint_comp_stacks(console, &(*compiler_stack), &(*unary_operator_stack), next_item_index, next_unop_index, file_str);
                 enum Register out_register = 0;
-                for (int offset = 1; offset <= 2; offset++) {
-                    if (compiler_stack[next_item_index - offset].unaries > 0) {
-                        if (!item_is_in_register(current_in_use_register, next_item_index - offset, held_registers, &out_register)) {
-                            held_registers[++current_in_use_register] = next_item_index - offset;
-                            printf("	movl   $0x%x, ", compiler_stack[next_item_index - offset].value);
-                            print_register(current_in_use_register, true);
-                            out_register = current_in_use_register;
-                        }
-                        apply_unaries(console, out_register, unary_operator_stack, next_unop_index, compiler_stack[next_item_index - offset].unaries);
-                        next_unop_index -= compiler_stack[next_item_index - offset].unaries;
-                        compiler_stack[next_item_index - offset].unaries = 0;
-                    }
+
+                int item_1_index = first_item_index;
+                int item_2_index = first_item_index + 1;
+
+                struct AsmItem* item_1 = &compiler_stack[item_1_index];
+                struct AsmItem* item_2 = &compiler_stack[item_2_index];
+                // Apply unary operations to the items.
+                if (prepare_for_binop(item_1, item_1_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_1->unaries);
+                    first_uop_index += item_1->unaries;
+                    item_1->unaries = 0;
                 }
-                //fprintf(console, "Case %d\n\n", item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register) + item_is_in_register(current_in_use_register, next_item_index - 2, held_registers, &out_register));
-                switch (item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register) 
-                       + item_is_in_register(current_in_use_register, next_item_index - 2, held_registers, &out_register)
-                    ) {
-                    case 0: // Both int literals
-                        held_registers[++current_in_use_register] = next_item_index - 2;
-                        printf("	movl   $0x%x, ", compiler_stack[next_item_index - 2].value);
+                if (prepare_for_binop(item_2, item_2_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_2->unaries);
+                    first_uop_index += item_2->unaries;
+                    item_2->unaries = 0;
+                }
+
+                #define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
+
+                if (IS_IN_REGISTER(item_1_index)) {
+                    printf(" 	addl   ");
+                    // Both in registers
+                    if (IS_IN_REGISTER(item_2_index)) {
+                        print_register(out_register, false);
+                        printf(", ");
+                        IS_IN_REGISTER(item_1_index);
+                        current_in_use_register--;
+                    }
+                    // Item 1 in register, item 2 not.
+                    else {
+                        IS_IN_REGISTER(item_1_index);
+                        printf("$0x%x, ", item_2->value);
+                    }
+                } 
+                else {
+                    // Item 2 in register, item 1 not
+                    if (IS_IN_REGISTER(item_2_index)) {
+                        printf(" 	addl   ");
+                        printf("$0x%x, ", item_1->value);
+                    } 
+                    // Neither item in register
+                    else {
+                        held_registers[++current_in_use_register] = item_2_index;
+                        printf("	movl   $0x%x, ", item_2->value);
                         print_register(current_in_use_register, true);
                         out_register = current_in_use_register;
 
-                        printf(" 	addl   "); printf("$0x%x, ", DATA_STACK_TOP.value); print_register(current_in_use_register, true);
-                    break;
-                    case 1: // One is a literal and one is a register
-                        printf(" 	addl   ");
-                        if (out_register) {
-                            printf("$0x%x, ", compiler_stack[next_item_index - 1].value);
-                            print_register(out_register, true);
-                            break;
-                        }
-                        item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register);
-                        printf("$0x%x, ", compiler_stack[next_item_index - 2].value);
-                        print_register(out_register, true);
-                    break;
-                    case 2: // Both are registers
-                        printf(" 	addl   ");
-                        item_is_in_register(current_in_use_register, next_item_index - 2, held_registers, &out_register);
-                        print_register(out_register, false);
-                        printf(", ");
-                        item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register);
-                        print_register(out_register, true);
-                        current_in_use_register--;
-                    break;
+                        printf(" 	addl   "); 
+                        printf("$0x%x, ", item_1->value);
+                    }
                 }
-                held_registers[out_register] = next_item_index - 2;
-                next_item_index--;
+                #undef IS_IN_REGISTER
+                print_register(out_register, true);
+                held_registers[out_register] = item_2_index;
+                first_item_index++;
             }
             break;
             case POL_RETURN: {
                 enum Register out_register = 0;
-                if (!item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register)) {
-                    held_registers[++current_in_use_register] = next_item_index - 1;
-                    printf("	movl   $0x%x, ", DATA_STACK_TOP.value);
+                if (!item_is_in_register(current_in_use_register, first_item_index, held_registers, &out_register)) {
+                    held_registers[++current_in_use_register] = first_item_index;
+                    printf("	movl   $0x%x, ", compiler_stack[first_item_index].value);
                     print_register(current_in_use_register, true);
                     out_register = current_in_use_register;
                 }
-                apply_unaries(console, out_register, unary_operator_stack, next_unop_index, DATA_STACK_TOP.unaries);
+                if (prepare_for_binop(&compiler_stack[first_item_index], first_item_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, compiler_stack[first_item_index].unaries);
+                    first_uop_index += compiler_stack[first_item_index].unaries;
+                    compiler_stack[first_item_index].unaries = 0;
+                }
                 printf(" 	ret\n");
             }
             break;

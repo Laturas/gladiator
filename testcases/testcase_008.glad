@@ -1,4 +1,4 @@
-// This comment doesn't affect the output
+// Testcase used to test ordering of operators
 main (param : i32) : i32 {
     return !~2 + -3;
 }

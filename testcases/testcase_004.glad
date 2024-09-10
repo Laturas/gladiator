@@ -1,4 +1,4 @@
-// This comment doesn't affect the output
+// See if operators cancel when chained
 main (param : i32) : i32 {
-    return ~~1 + 1 + 1 + 1 + 1 + 1;
+    return ~~1 + 1 + 1 + ~~1 + 1 + 1;
 }
