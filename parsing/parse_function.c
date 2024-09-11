@@ -147,6 +147,7 @@ int get_operator_priority(PolType type) {
         case POL_NEGATE:
         case POL_COMPLEMENT: return 3;
 
+        case POL_MINUS:
         case POL_ADD: return 2;
 
         case POL_ASSIGN:
@@ -197,22 +198,31 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
                 }
             break;
             case RETURN: {
-                    last = apush(operator_stack, empty);
-                    last->type = POL_RETURN;
-                    count++;
-                }
+                last = apush(operator_stack, empty);
+                last->type = POL_RETURN;
+                count++;
+            }
             break;
             case NEGATE: {
+                if (next[-1].token == CUSTOM) {
+                    if (count > 0 && get_operator_priority(operators[count].type) > get_operator_priority(POL_MINUS)) {
+                        pop_ops_until_priority(output_arena, operator_stack, operators, &count, get_operator_priority(POL_MINUS));
+                    }
                     last = apush(operator_stack, empty);
-                    last->type = POL_NEGATE;
+                    last->type = POL_MINUS;
                     count++;
+                    break;
                 }
+                last = apush(operator_stack, empty);
+                last->type = POL_NEGATE;
+                count++;
+            }
             break;
             case NOT: {
-                    last = apush(operator_stack, empty);
-                    last->type = POL_NOT;
-                    count++;
-                }
+                last = apush(operator_stack, empty);
+                last->type = POL_NOT;
+                count++;
+            }
             break;
             case COMPLEMENT:
                 if (count > 0 && get_operator_priority(operators[count].type) > get_operator_priority(POL_COMPLEMENT)) {

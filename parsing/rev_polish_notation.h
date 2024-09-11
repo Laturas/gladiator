@@ -23,6 +23,7 @@ typedef enum PolTypes {
 
     // Binary operators
     POL_ADD, // +
+    POL_MINUS, // -
 
     // Other
     POL_ENDSTATEMENT, // ;
@@ -62,6 +63,8 @@ void print_node(PolNode input, const string const file_buffer) {
             printf("Not"); break;
         case POL_ADD:
             printf("Add"); break;
+        case POL_MINUS:
+            printf("Minus"); break;
         case POL_ENDSTATEMENT:
             printf("Statement end");
     }

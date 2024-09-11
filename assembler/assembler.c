@@ -41,11 +41,6 @@ static void print_register(enum Register reg_to_print, bool newline) {
     if (newline) {printf("\n");}
 }
 
-#define ADVANCE_DATA while (first_data->type != POL_LITERAL && first_data < ass.last) {first_data++;}
-#define MOVE_IF_NOT(register) if (current == register) {ADVANCE_DATA printf("	movl   $"); printf("0x%x, ",get_int_literal(first_data->start, file_str)); print_register(register + 1, true); current = register + 1; first_data++;}
-
-//#define clear_unaries(item_index)
-
 bool item_is_in_register(enum Register current_in_use_register, int item_index, enum Register* held_registers, enum Register *out_register) {
     for (int i = EAX; i <= current_in_use_register; i++) {
         if (held_registers[i] == item_index) {*out_register = i; return true;}
@@ -156,6 +151,63 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                 }
                 unary_operator_stack[next_unop_index++] = current_item->type;
                 compiler_stack[next_item_index - 1].unaries += 1;
+            break;
+            case POL_MINUS:  {
+                enum Register out_register = 0;
+
+                int item_1_index = first_item_index;
+                int item_2_index = first_item_index + 1;
+
+                struct AsmItem* item_1 = &compiler_stack[item_1_index];
+                struct AsmItem* item_2 = &compiler_stack[item_2_index];
+
+                // 3 - 1
+                // item_1 - item_2 -> item_2
+                // subl %ebx, %eax
+
+                // Apply unary operations to the items.
+                if (prepare_for_binop(item_1, item_1_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_1->unaries);
+                    first_uop_index += item_1->unaries;
+                    item_1->unaries = 0;
+                }
+                if (prepare_for_binop(item_2, item_2_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_2->unaries);
+                    first_uop_index += item_2->unaries;
+                    item_2->unaries = 0;
+                }
+                if (!item_is_in_register(current_in_use_register, item_2_index, held_registers, &out_register)) {
+                    held_registers[++current_in_use_register] = item_2_index;
+                    printf("	movl   $0x%x, ", item_2->value);
+                    print_register(current_in_use_register, true);
+                    out_register = current_in_use_register;
+                }
+                if (!item_is_in_register(current_in_use_register, item_1_index, held_registers, &out_register)) {
+                    held_registers[++current_in_use_register] = item_1_index;
+                    printf("	movl   $0x%x, ", item_1->value);
+                    print_register(current_in_use_register, true);
+                    out_register = current_in_use_register;
+                }
+                #define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
+
+                IS_IN_REGISTER(item_2_index);
+                enum Register i2_register = out_register;
+                printf(" 	subl   ");
+                // Both in registers
+                print_register(out_register, false);
+                printf(", ");
+                IS_IN_REGISTER(item_1_index);
+                enum Register i1_register = out_register;
+                current_in_use_register--;
+
+                #undef IS_IN_REGISTER
+                print_register(out_register, true);
+                held_registers[out_register] = item_2_index;
+                first_item_index++;
+                if (i1_register > i2_register) {
+                    printf("	movl   "); print_register(i1_register, false); printf(", "); print_register(i2_register, true);
+                }
+            }
             break;
             case POL_ADD: {
                 enum Register out_register = 0;
