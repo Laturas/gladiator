@@ -49,13 +49,12 @@ bool item_is_in_register(enum Register current_in_use_register, int item_index, 
     return false;
 }
 
-void apply_unaries(FILE* output, enum Register reg, PolType* unary_operator_stack, int first_unop_index, int amount_to_apply) {
+void apply_unaries(FILE* output, enum Register reg, PolType* unary_operator_stack, int next_unop_index, int amount_to_apply) {
     //fprintf(output, "Item has to have %d unaries applied\n", amount_to_apply);
-    for (int i = 0; i < amount_to_apply; i++) {
-        PolNode tmp = {unary_operator_stack[first_unop_index + i], 0};
+    for (int i = amount_to_apply; i > 0; i--) {
 
         //fprintf(output, "Applying unary: "); fprint_node(output, tmp, NULL); fprintf(output, "\n");
-        switch (unary_operator_stack[first_unop_index + i]) {
+        switch (unary_operator_stack[next_unop_index - i]) {
             case POL_NEGATE:
                 printf(" 	neg    "); print_register(reg, true);
             break;
@@ -155,8 +154,8 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
             case POL_MINUS:  {
                 enum Register out_register = 0;
 
-                int item_1_index = first_item_index;
-                int item_2_index = first_item_index + 1;
+                int item_1_index = next_item_index - 1;
+                int item_2_index = next_item_index - 2;
 
                 struct AsmItem* item_1 = &compiler_stack[item_1_index];
                 struct AsmItem* item_2 = &compiler_stack[item_2_index];
@@ -167,13 +166,13 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 
                 // Apply unary operations to the items.
                 if (prepare_for_binop(item_1, item_1_index, &current_in_use_register, held_registers)) {
-                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_1->unaries);
-                    first_uop_index += item_1->unaries;
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, item_1->unaries);
+                    next_unop_index -= item_1->unaries;
                     item_1->unaries = 0;
                 }
                 if (prepare_for_binop(item_2, item_2_index, &current_in_use_register, held_registers)) {
-                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_2->unaries);
-                    first_uop_index += item_2->unaries;
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, item_2->unaries);
+                    next_unop_index -= item_2->unaries;
                     item_2->unaries = 0;
                 }
                 if (!item_is_in_register(current_in_use_register, item_2_index, held_registers, &out_register)) {
@@ -189,43 +188,44 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                     out_register = current_in_use_register;
                 }
                 #define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
-
-                IS_IN_REGISTER(item_2_index);
-                enum Register i2_register = out_register;
+                
+                IS_IN_REGISTER(item_1_index);
+                enum Register i1_register = out_register;
                 printf(" 	subl   ");
                 // Both in registers
                 print_register(out_register, false);
                 printf(", ");
-                IS_IN_REGISTER(item_1_index);
-                enum Register i1_register = out_register;
+                IS_IN_REGISTER(item_2_index);
+                enum Register i2_register = out_register;
                 current_in_use_register--;
 
                 #undef IS_IN_REGISTER
                 print_register(out_register, true);
                 held_registers[out_register] = item_2_index;
-                first_item_index++;
-                if (i1_register > i2_register) {
-                    printf("	movl   "); print_register(i1_register, false); printf(", "); print_register(i2_register, true);
+                next_item_index--;
+                if (i2_register > i1_register) {
+                    printf("	movl   "); print_register(i2_register, false); printf(", "); print_register(i1_register, true);
+                    held_registers[i1_register] = item_2_index;
                 }
             }
             break;
             case POL_ADD: {
                 enum Register out_register = 0;
 
-                int item_1_index = first_item_index;
-                int item_2_index = first_item_index + 1;
+                int item_1_index = next_item_index - 1;
+                int item_2_index = next_item_index - 2;
 
                 struct AsmItem* item_1 = &compiler_stack[item_1_index];
                 struct AsmItem* item_2 = &compiler_stack[item_2_index];
                 // Apply unary operations to the items.
                 if (prepare_for_binop(item_1, item_1_index, &current_in_use_register, held_registers)) {
-                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_1->unaries);
-                    first_uop_index += item_1->unaries;
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, item_1->unaries);
+                    next_unop_index -= item_1->unaries;
                     item_1->unaries = 0;
                 }
                 if (prepare_for_binop(item_2, item_2_index, &current_in_use_register, held_registers)) {
-                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, item_2->unaries);
-                    first_uop_index += item_2->unaries;
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, item_2->unaries);
+                    next_unop_index -= item_2->unaries;
                     item_2->unaries = 0;
                 }
 
@@ -266,21 +266,22 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                 #undef IS_IN_REGISTER
                 print_register(out_register, true);
                 held_registers[out_register] = item_2_index;
-                first_item_index++;
+                next_item_index--;
             }
             break;
             case POL_RETURN: {
                 enum Register out_register = 0;
-                if (!item_is_in_register(current_in_use_register, first_item_index, held_registers, &out_register)) {
-                    held_registers[++current_in_use_register] = first_item_index;
-                    printf("	movl   $0x%x, ", compiler_stack[first_item_index].value);
+                if (!item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register)) {
+                    held_registers[++current_in_use_register] = next_item_index - 1;
+                    printf("	movl   $0x%x, ", compiler_stack[next_item_index - 1].value);
                     print_register(current_in_use_register, true);
                     out_register = current_in_use_register;
+                    //fprintf(console, "sorry my bad\n");
                 }
-                if (prepare_for_binop(&compiler_stack[first_item_index], first_item_index, &current_in_use_register, held_registers)) {
-                    apply_unaries(console, current_in_use_register, unary_operator_stack, first_uop_index, compiler_stack[first_item_index].unaries);
-                    first_uop_index += compiler_stack[first_item_index].unaries;
-                    compiler_stack[first_item_index].unaries = 0;
+                if (prepare_for_binop(&compiler_stack[next_item_index - 1], next_item_index - 1, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, compiler_stack[next_item_index - 1].unaries);
+                    next_unop_index -= compiler_stack[next_item_index - 1].unaries;
+                    compiler_stack[next_item_index - 1].unaries = 0;
                 }
                 printf(" 	ret\n");
             }
