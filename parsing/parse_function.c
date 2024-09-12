@@ -155,7 +155,9 @@ int get_operator_priority(PolType type) {
     switch (type) {
         case POL_NOT:
         case POL_NEGATE:
-        case POL_COMPLEMENT: return 3;
+        case POL_COMPLEMENT: return 4;
+
+        case POL_MUL: return 3;
 
         case POL_MINUS:
         case POL_ADD: return 2;
@@ -248,6 +250,14 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
                 }
                 last = apush(operator_stack, empty);
                 last->type = POL_ADD;
+                count++;
+            break;
+            case MULTIPLY:
+                if (count > 0 && get_operator_priority(operators[count].type) > get_operator_priority(POL_MUL)) {
+                    pop_ops_until_priority(output_arena, operator_stack, operators, &count, get_operator_priority(POL_MUL));
+                }
+                last = apush(operator_stack, empty);
+                last->type = POL_MUL;
                 count++;
             break;
             case SEMICOLON:

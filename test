@@ -4,3 +4,8 @@ do
     ./glad_compile.exe ./testcases/testcase_00$VARIABLE.glad
     python ./testcases/test.py 00$VARIABLE
 done
+for VARIABLE in $(seq 0 0)
+do
+    ./glad_compile.exe ./testcases/testcase_01$VARIABLE.glad
+    python ./testcases/test.py 01$VARIABLE
+done

@@ -17,6 +17,7 @@ Token match_1(char match_char) {
         case '-': return NEGATE;
         case '!': return NOT;
         case '+': return PLUS;
+        case '*': return MULTIPLY;
         case '~': return COMPLEMENT;
         case '\n': return NEWLINE;
         case ' ' : return WHITESPACE;
@@ -84,6 +85,8 @@ void print_atom(Atom input_atom, enum AtomPrintParams params, const string const
             printf("~"); break;
         case PLUS:
             printf("+"); break;
+        case MULTIPLY:
+            printf("*"); break;
         case INT_LITERAL:
             printf("[value]"); break;
         case WHITESPACE:

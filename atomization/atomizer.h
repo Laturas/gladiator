@@ -33,6 +33,7 @@ enum Token {
 
     // Binary operators
     PLUS, // +
+    MULTIPLY, // *
 
 
     RETURN,

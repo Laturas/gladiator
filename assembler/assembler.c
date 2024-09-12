@@ -185,32 +185,94 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                     print_register(current_in_use_register, true);
                     out_register = current_in_use_register;
                 }
-                if (!item_is_in_register(current_in_use_register, item_1_index, held_registers, &out_register)) {
-                    held_registers[++current_in_use_register] = item_1_index;
-                    printf("	movl   $0x%x, ", item_1->value);
-                    print_register(current_in_use_register, true);
-                    out_register = current_in_use_register;
-                }
                 #define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
                 
                 IS_IN_REGISTER(item_1_index);
                 enum Register i1_register = out_register;
                 printf(" 	subl   ");
                 // Both in registers
-                print_register(out_register, false);
+                if (out_register) {
+                    print_register(out_register, false);
+                }
+                else {
+                    printf("$0x%x", item_1->value);
+                }
+                
                 printf(", ");
                 IS_IN_REGISTER(item_2_index);
+                if (i1_register) {
+                    current_in_use_register--;
+                }
                 enum Register i2_register = out_register;
-                current_in_use_register--;
 
                 #undef IS_IN_REGISTER
                 print_register(out_register, true);
                 held_registers[out_register] = item_2_index;
                 next_item_index--;
-                if (i2_register > i1_register) {
+                if ((i1_register) && i2_register > i1_register) {
                     printf("	movl   "); print_register(i2_register, false); printf(", "); print_register(i1_register, true);
                     held_registers[i1_register] = item_2_index;
                 }
+            }
+            break;
+            case POL_MUL: {
+                enum Register out_register = 0;
+
+                int item_1_index = next_item_index - 1;
+                int item_2_index = next_item_index - 2;
+
+                struct AsmItem* item_1 = &compiler_stack[item_1_index];
+                struct AsmItem* item_2 = &compiler_stack[item_2_index];
+                // Apply unary operations to the items.
+                if (prepare_for_binop(item_1, item_1_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, item_1->unaries);
+                    next_unop_index -= item_1->unaries;
+                    item_1->unaries = 0;
+                }
+                if (prepare_for_binop(item_2, item_2_index, &current_in_use_register, held_registers)) {
+                    apply_unaries(console, current_in_use_register, unary_operator_stack, next_unop_index, item_2->unaries);
+                    next_unop_index -= item_2->unaries;
+                    item_2->unaries = 0;
+                }
+
+                #define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
+
+                if (IS_IN_REGISTER(item_1_index)) {
+                    printf(" 	imul   ");
+                    // Both in registers
+                    if (IS_IN_REGISTER(item_2_index)) {
+                        print_register(out_register, false);
+                        printf(", ");
+                        IS_IN_REGISTER(item_1_index);
+                        current_in_use_register--;
+                    }
+                    // Item 1 in register, item 2 not.
+                    else {
+                        IS_IN_REGISTER(item_1_index);
+                        printf("$0x%x, ", item_2->value);
+                    }
+                } 
+                else {
+                    // Item 2 in register, item 1 not
+                    if (IS_IN_REGISTER(item_2_index)) {
+                        printf(" 	imul   ");
+                        printf("$0x%x, ", item_1->value);
+                    } 
+                    // Neither item in register
+                    else {
+                        held_registers[++current_in_use_register] = item_2_index;
+                        printf("	movl   $0x%x, ", item_2->value);
+                        print_register(current_in_use_register, true);
+                        out_register = current_in_use_register;
+
+                        printf(" 	imul   "); 
+                        printf("$0x%x, ", item_1->value);
+                    }
+                }
+                #undef IS_IN_REGISTER
+                print_register(out_register, true);
+                held_registers[out_register] = item_2_index;
+                next_item_index--;
             }
             break;
             case POL_ADD: {
@@ -234,15 +296,27 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                 }
 
                 #define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
+                enum Register i1_register = NO_REGISTER;
+                enum Register i2_register = NO_REGISTER;
 
                 if (IS_IN_REGISTER(item_1_index)) {
+                    i1_register = out_register;
                     printf(" 	addl   ");
                     // Both in registers
                     if (IS_IN_REGISTER(item_2_index)) {
-                        print_register(out_register, false);
-                        printf(", ");
-                        IS_IN_REGISTER(item_1_index);
-                        current_in_use_register--;
+                        i2_register = out_register;
+                        if (i2_register < i1_register) {
+                            print_register(i1_register, false);
+                            printf(", ");
+                            out_register = i2_register;
+                            current_in_use_register--;
+                        }
+                        else {
+                            print_register(out_register, false);
+                            printf(", ");
+                            IS_IN_REGISTER(item_1_index);
+                            current_in_use_register--;
+                        }
                     }
                     // Item 1 in register, item 2 not.
                     else {
@@ -267,10 +341,10 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
                         printf("$0x%x, ", item_1->value);
                     }
                 }
-                #undef IS_IN_REGISTER
                 print_register(out_register, true);
                 held_registers[out_register] = item_2_index;
                 next_item_index--;
+                #undef IS_IN_REGISTER
             }
             break;
             case POL_RETURN: {

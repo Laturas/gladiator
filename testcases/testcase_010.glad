@@ -1,4 +1,4 @@
-// This comment doesn't affect the output
+// Multiplication test! This should equal 10.
 main (param : i32) : i32 {
     return 2 * !!3 + 5 * 2 - 6;
 }
