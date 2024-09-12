@@ -1,4 +1,4 @@
-// Testcase used to test ordering of operators
+// Testcase used to test ordering of unary operators
 main (param : i32) : i32 {
     return !~2 + -3;
 }

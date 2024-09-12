@@ -49,6 +49,10 @@ bool item_is_in_register(enum Register current_in_use_register, int item_index, 
     return false;
 }
 
+/**
+ * Applies unary operators in reverse order.
+ * stack[top - 2] then stack[top - 1]
+ */
 void apply_unaries(FILE* output, enum Register reg, PolType* unary_operator_stack, int next_unop_index, int amount_to_apply) {
     //fprintf(output, "Item has to have %d unaries applied\n", amount_to_apply);
     for (int i = amount_to_apply; i > 0; i--) {

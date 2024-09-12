@@ -1,4 +1,5 @@
-// This comment doesn't affect the output
-main (param : i32) : i32 {
+// Tests to make sure the addition and
+// subtraction are evaluated in the correct order
+main () : i32 {
     return 3 - !1 + 2;
 }
