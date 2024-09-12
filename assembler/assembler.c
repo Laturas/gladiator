@@ -51,10 +51,10 @@ bool item_is_in_register(enum Register current_in_use_register, int item_index, 
 
 void apply_unaries(FILE* output, enum Register reg, PolType* unary_operator_stack, int next_unop_index, int amount_to_apply) {
     //fprintf(output, "Item has to have %d unaries applied\n", amount_to_apply);
-    for (int i = 0; i < amount_to_apply; i++) {
+    for (int i = amount_to_apply; i > 0; i--) {
 
         //fprintf(output, "Applying unary: "); fprint_node(output, tmp, NULL); fprintf(output, "\n");
-        switch (unary_operator_stack[next_unop_index - 1 - i]) {
+        switch (unary_operator_stack[next_unop_index - i]) {
             case POL_NEGATE:
                 printf(" 	neg    "); print_register(reg, true);
             break;

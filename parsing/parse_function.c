@@ -141,6 +141,16 @@ bool is_number(u32 start, const string const file_text) {
     return true;
 }
 
+bool is_unary(PolType type) {
+    switch (type) {
+        case POL_NOT:
+        case POL_NEGATE:
+        case POL_COMPLEMENT: return true;
+
+        default: return false;
+    }
+}
+
 int get_operator_priority(PolType type) {
     switch (type) {
         case POL_NOT:
@@ -160,7 +170,7 @@ int get_operator_priority(PolType type) {
 void pop_ops_until_priority(arena output_arena, arena operator_stack, PolNode* operators, u32* operator_count, int priority) {
     PolNode empty = {0};
     u32 count = *operator_count;
-    while (get_operator_priority(operators[count].type) > priority) {
+    while (get_operator_priority(operators[count].type) > priority || is_unary(operators[count].type)) {
         PolNode* pushed = apush(output_arena, empty);
         pushed->type = operators[count].type;
         pushed->start = operators[count].start;

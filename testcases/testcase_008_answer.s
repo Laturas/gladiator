@@ -1,11 +1,11 @@
 	.globl	__main
 __main:
-	movl   $0x2, %eax
- 	not    %eax
- 	cmpl   $0, %eax
- 	movl   $0, %eax
+	movl   $0x3, %eax
+ 	neg    %eax
+	movl   $0x2, %ebx
+ 	not    %ebx
+ 	cmpl   $0, %ebx
+ 	movl   $0, %ebx
  	sete   %al
-	movl   $0x3, %ebx
- 	neg    %ebx
  	addl   %ebx, %eax
  	ret
