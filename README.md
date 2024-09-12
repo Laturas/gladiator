@@ -14,8 +14,9 @@ Currently the program is capable of compiling the following operations on 32bit 
 - Binary not (~)
 - Negation / negatives
 
-It does this while allocating no stack space. Although the code is not optimal and often requires extra mov instructions.
+It does this while allocating no stack space. Although the code is not optimal and often requires extra mov instructions with subtraction.
 
 Additional things the compiler supports:
 - One line comments with //
 - Parser error reporting with line and column numbers (though this is only currently supported with function headers)
+- Having two logical nots, binary nots, or negatives cancels both of them out. return ~~1; creates equivalent asm to return 1;
