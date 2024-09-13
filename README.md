@@ -10,6 +10,7 @@ Currently the program is capable of compiling the following operations on 32bit 
 - Returning from the main function
 - Addition
 - Subtraction
+- Multiplication
 - Logical not (!)
 - Binary not (~)
 - Negation / negatives
