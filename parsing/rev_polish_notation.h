@@ -7,7 +7,6 @@ typedef enum PolTypes {
     POL_FUNC_START,
     POL_INIT_FN_PARAM,
     POL_INIT_LOCAL_VAR,
-    POL_ASSIGN,
     POL_RETURN,
     POL_LITERAL,
     POL_VAR,
@@ -26,6 +25,9 @@ typedef enum PolTypes {
     POL_MINUS, // -
     POL_MUL, // *
 
+    POL_ASSIGN, // =
+    POL_TYPEASSIGN, // :
+
     // Other
     POL_ENDSTATEMENT, // ;
 } PolType;
@@ -42,6 +44,8 @@ void print_node(PolNode input, const string const file_buffer) {
     switch (input.type) {
         case POL_EMPTY:
             printf("Do nothing"); break;
+        case POL_VAR:
+            printf("Var identifier: "); print_to_next_token(input.start, file_buffer); break;
         case POL_FUNC_START:
             printf("Declare fn: "); print_to_next_token(input.start, file_buffer); break;
         case POL_INIT_FN_PARAM:
@@ -66,6 +70,8 @@ void print_node(PolNode input, const string const file_buffer) {
             printf("Add"); break;
         case POL_MUL:
             printf("Multiply"); break;
+        case POL_TYPEASSIGN:
+            printf("Assign type"); break;
         case POL_MINUS:
             printf("Minus"); break;
         case POL_ENDSTATEMENT:
@@ -77,6 +83,8 @@ void fprint_node(FILE* out, PolNode input, const string const file_buffer) {
     switch (input.type) {
         case POL_EMPTY:
             fprintf(out, "Do nothing"); break;
+        case POL_VAR:
+            fprintf(out, "Var identifier: "); fprint_to_next_token(out, input.start, file_buffer); break;
         case POL_FUNC_START:
             fprintf(out, "Declare fn: "); fprint_to_next_token(out, input.start, file_buffer); break;
         case POL_INIT_FN_PARAM:
@@ -101,6 +109,8 @@ void fprint_node(FILE* out, PolNode input, const string const file_buffer) {
             fprintf(out, "Add"); break;
         case POL_MUL:
             fprintf(out, "Multiply"); break;
+        case POL_TYPEASSIGN:
+            fprintf(out, "Assign type"); break;
     }
 }
 

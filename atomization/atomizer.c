@@ -19,6 +19,7 @@ Token match_1(char match_char) {
         case '+': return PLUS;
         case '*': return MULTIPLY;
         case '~': return COMPLEMENT;
+        case '=': return EQUALS;
         case '\n': return NEWLINE;
         case ' ' : return WHITESPACE;
 
@@ -48,7 +49,14 @@ void fprint_to_next_token(FILE* out, u32 start, const string const file_buffer) 
 void print_atom(Atom input_atom, enum AtomPrintParams params, const string const file) {
     switch (input_atom.token) {
         case CUSTOM:
-            if (params & FILE_PRESENT) {printf("OTHER("); print_to_next_token(input_atom.start, file); printf(")");}
+            if (params & FILE_PRESENT) {
+                if (!(params & EXCLUDE_OTHER_TAG)) {
+                    printf("OTHER("); print_to_next_token(input_atom.start, file); printf(")");
+                }
+                else {
+                    print_to_next_token(input_atom.start, file);
+                }
+            }
             else {printf("OTHER");}
             break;
         case OPEN_BRACE:
@@ -87,6 +95,8 @@ void print_atom(Atom input_atom, enum AtomPrintParams params, const string const
             printf("+"); break;
         case MULTIPLY:
             printf("*"); break;
+        case EQUALS:
+            printf("="); break;
         case INT_LITERAL:
             printf("[value]"); break;
         case WHITESPACE:

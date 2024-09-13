@@ -260,6 +260,34 @@ PolNode* parse_tokens_into_nodes(arena output_arena, Atom** atoms, Atom* bound, 
                 last->type = POL_MUL;
                 count++;
             break;
+            case EQUALS:
+                last = apush(operator_stack, empty);
+                last->type = POL_ASSIGN;
+                count++;
+            break;
+            case COLON:
+                if (next + 1 >= bound) { error_on(next->start, file_text, PARSING_ERROR); printf("Parsing error: file terminates unexpectedly"); exit(1); }
+                // It needs to be a custom identifier and not a number.
+                if (next[-1].token != CUSTOM || is_number(next[-1].start, file_text)) { error_on(next->start, file_text, PARSING_ERROR); printf("Parsing error: Attempted assigning a type to a non-variable"); exit(1); }
+                next = (*atoms)++;
+                if (next->token == I32) {
+                    last = apush(output_arena, empty);
+                    last->type = POL_TYPEASSIGN;
+                    last->start = 1;
+                }
+                else if (next->token == EQUALS) {
+                    last = apush(output_arena, empty);
+                    last->type = POL_TYPEASSIGN;
+                    last->start = 0;
+
+                    last = apush(operator_stack, empty);
+                    last->type = POL_ASSIGN;
+                    count++;
+                }
+                else {
+                    error_on(next->start, file_text, PARSING_ERROR); printf("Illegal token following type declaration: "); print_atom(*next, FILE_PRESENT | EXCLUDE_OTHER_TAG, file_text); exit(1);
+                }
+            break;
             case SEMICOLON:
                 while (count > 0) {
                     last = apush(output_arena, empty);

@@ -35,7 +35,7 @@ enum Token {
     PLUS, // +
     MULTIPLY, // *
 
-
+    EQUALS, // =
     RETURN,
     INT_LITERAL,
 
@@ -66,6 +66,7 @@ enum AtomPrintParams {
     NONE = 0,
     LINES = 1,
     FILE_PRESENT = 2,
+    EXCLUDE_OTHER_TAG = 4,
 };
 
 void print_atom_list(AtomList* list, enum AtomPrintParams params, const string const file_ref);
