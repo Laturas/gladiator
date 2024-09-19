@@ -159,14 +159,14 @@ Token match(string str) {
     }
 }
 
-Atom token_list_append(arena token_arena, AtomList* atomlist, Atom atom) {
+static Atom token_list_append(arena token_arena, AtomList* atomlist, Atom atom) {
     if (atom.token >= NO_APPEND) {return atom;}
     Atom* a = apush(token_arena, atom);
     if (!(atomlist->listlen++)) {atomlist->list = a;}
     return atom;
 }
 
-Atom construct_atom(Token token, u32 location) {
+static Atom construct_atom(Token token, u32 location) {
     Atom return_atom = {token,location};
     switch (token) {
         case CUSTOM:
