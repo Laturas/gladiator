@@ -1,4 +1,6 @@
-#include "arenas.h"
+#ifndef INCLUDES
+	#include "ALL_INCLUDES"
+#endif
 
 #define ARENA_HEADER_SIZE sizeof(u64) * 2
 #define PGSIZE 4096

@@ -1,5 +1,5 @@
 #ifndef INCLUDES
-#include "ALL_INCLUDES"
+	#include "ALL_INCLUDES"
 #endif
 
 static enum Register {
@@ -10,7 +10,16 @@ static enum Register {
 	EDX,
 } Register;
 
-FILE* asm_out = NULL;
+FILE* asm_out_file = NULL;
+static arena asm_str_output;
+static int arena_end_point = 0;
+
+void write_asm(char* to_write, int length) {
+	for (int i = 0; i < length; i++) {
+		asm_str_output.buffer[arena_end_point + i] = to_write[i];
+	}
+	arena_end_point += length;
+}
 
 int get_int_literal(u32 start, const string const file_str) {
 	char buffer[50] = {0};
@@ -28,19 +37,19 @@ static void print_register(enum Register reg_to_print, bool newline) {
 			printf("error! Null register value attempting to be written");
 		break;
 		case EAX:
-			fprintf(asm_out, "%%eax");
+			fprintf(asm_out_file, "%%eax");
 		break;
 		case EBX:
-			fprintf(asm_out, "%%ebx");
+			fprintf(asm_out_file, "%%ebx");
 		break;
 		case ECX:
-			fprintf(asm_out, "%%ecx");
+			fprintf(asm_out_file, "%%ecx");
 		break;
 		case EDX:
-			fprintf(asm_out, "%%edx");
+			fprintf(asm_out_file, "%%edx");
 		break;
 	}
-	if (newline) {fprintf(asm_out, "\n");}
+	if (newline) {fprintf(asm_out_file, "\n");}
 }
 
 static bool item_is_in_register(enum Register current_in_use_register, int item_index, enum Register* held_registers, enum Register *out_register) {
@@ -62,15 +71,15 @@ void apply_unaries(enum Register reg, PolType* unary_operator_stack, int next_un
 		//fprintf(output, "Applying unary: "); fprint_node(output, tmp, NULL); fprintf(output, "\n");
 		switch (unary_operator_stack[next_unop_index - i]) {
 			case POL_NEGATE:
-				fprintf(asm_out, " 	neg    "); print_register(reg, true);
+				fprintf(asm_out_file, " 	neg    "); print_register(reg, true);
 			break;
 			case POL_COMPLEMENT:
-				fprintf(asm_out, " 	not    "); print_register(reg, true);
+				fprintf(asm_out_file, " 	not    "); print_register(reg, true);
 			break;
 			case POL_NOT:
-				fprintf(asm_out, " 	cmpl   $0, "); print_register(reg, true);
-				fprintf(asm_out, " 	movl   $0, "); print_register(reg, true); // Using xor clears the flags and thus can't be used to zero eax :c
-				fprintf(asm_out, " 	sete   %%al\n");
+				fprintf(asm_out_file, " 	cmpl   $0, "); print_register(reg, true);
+				fprintf(asm_out_file, " 	movl   $0, "); print_register(reg, true); // Using xor clears the flags and thus can't be used to zero eax :c
+				fprintf(asm_out_file, " 	sete   %%al\n");
 			break;
 		}
 	}
@@ -110,7 +119,7 @@ bool prepare_for_binop(struct AsmItem* item_ref, int item_index, enum Register* 
 	if (item.unaries > 0) {
 		if (!item_is_in_register(*register_reference, item_index, registers, &_)) {
 			registers[++(*register_reference)] = item_index;
-			fprintf(asm_out, "	movl   $0x%x, ", item.value);
+			fprintf(asm_out_file, "	movl   $0x%x, ", item.value);
 			print_register((*register_reference), true);
 		}
 		return true;
@@ -140,7 +149,7 @@ bool idents_are_equal(u32 start_1, u32 start_2, const string const file_str) {
 
 static void asm_print_to_next_token(u32 start, const string const file_buffer) {
 	while (start < file_buffer->length && match_1(file_buffer->raw_string[start]) == CUSTOM) {
-		fprintf(asm_out, "%c", file_buffer->raw_string[start++]);
+		fprintf(asm_out_file, "%c", file_buffer->raw_string[start++]);
 	}
 }
 
@@ -157,14 +166,14 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 	LVar vars[255] = {0};
 	int vars_end = 0;
 
-	asm_out = fopen("output.s", "w");
+	asm_out_file = fopen("output.s", "w");
 	PolNode* current_item = ass.first;
 
 	while (current_item <= ass.last) {
 		switch (current_item->type) {
 			case POL_FUNC_START:
-				fprintf(asm_out, "	.globl	__"); asm_print_to_next_token(current_item->start, file_str); fprintf(asm_out, "\n__");
-				asm_print_to_next_token(current_item->start, file_str); fprintf(asm_out, ":\n");
+				fprintf(asm_out_file, "	.globl	__"); asm_print_to_next_token(current_item->start, file_str); fprintf(asm_out_file, "\n__");
+				asm_print_to_next_token(current_item->start, file_str); fprintf(asm_out_file, ":\n");
 			break;
 			case POL_LITERAL: {
 				struct AsmItem item = {0, get_int_literal(current_item->start, file_str)};
@@ -215,7 +224,7 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 				}
 				if (!item_is_in_register(current_in_use_register, item_2_index, held_registers, &out_register)) {
 					held_registers[++current_in_use_register] = item_2_index;
-					fprintf(asm_out, "	movl   $0x%x, ", item_2->value);
+					fprintf(asm_out_file, "	movl   $0x%x, ", item_2->value);
 					print_register(current_in_use_register, true);
 					out_register = current_in_use_register;
 				}
@@ -223,16 +232,16 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 				
 				IS_IN_REGISTER(item_1_index);
 				enum Register i1_register = out_register;
-				fprintf(asm_out, " 	subl   ");
+				fprintf(asm_out_file, " 	subl   ");
 				// Both in registers
 				if (out_register) {
 					print_register(out_register, false);
 				}
 				else {
-					fprintf(asm_out, "$0x%x", item_1->value);
+					fprintf(asm_out_file, "$0x%x", item_1->value);
 				}
 				
-				fprintf(asm_out, ", ");
+				fprintf(asm_out_file, ", ");
 				IS_IN_REGISTER(item_2_index);
 				if (i1_register) {
 					current_in_use_register--;
@@ -244,7 +253,7 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 				held_registers[out_register] = item_2_index;
 				next_item_index--;
 				if ((i1_register) && i2_register > i1_register) {
-					fprintf(asm_out, "	movl   "); print_register(i2_register, false); fprintf(asm_out, ", "); print_register(i1_register, true);
+					fprintf(asm_out_file, "	movl   "); print_register(i2_register, false); fprintf(asm_out_file, ", "); print_register(i1_register, true);
 					held_registers[i1_register] = item_2_index;
 				}
 			}
@@ -272,35 +281,35 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 				#define IS_IN_REGISTER(item) item_is_in_register(current_in_use_register, item, held_registers, &out_register)
 
 				if (IS_IN_REGISTER(item_1_index)) {
-					fprintf(asm_out, " 	imul   ");
+					fprintf(asm_out_file, " 	imul   ");
 					// Both in registers
 					if (IS_IN_REGISTER(item_2_index)) {
 						print_register(out_register, false);
-						fprintf(asm_out, ", ");
+						fprintf(asm_out_file, ", ");
 						IS_IN_REGISTER(item_1_index);
 						current_in_use_register--;
 					}
 					// Item 1 in register, item 2 not.
 					else {
 						IS_IN_REGISTER(item_1_index);
-						fprintf(asm_out, "$0x%x, ", item_2->value);
+						fprintf(asm_out_file, "$0x%x, ", item_2->value);
 					}
 				} 
 				else {
 					// Item 2 in register, item 1 not
 					if (IS_IN_REGISTER(item_2_index)) {
-						fprintf(asm_out, " 	imul   ");
-						fprintf(asm_out, "$0x%x, ", item_1->value);
+						fprintf(asm_out_file, " 	imul   ");
+						fprintf(asm_out_file, "$0x%x, ", item_1->value);
 					} 
 					// Neither item in register
 					else {
 						held_registers[++current_in_use_register] = item_2_index;
-						fprintf(asm_out, "	movl   $0x%x, ", item_2->value);
+						fprintf(asm_out_file, "	movl   $0x%x, ", item_2->value);
 						print_register(current_in_use_register, true);
 						out_register = current_in_use_register;
 
-						fprintf(asm_out, " 	imul   "); 
-						fprintf(asm_out, "$0x%x, ", item_1->value);
+						fprintf(asm_out_file, " 	imul   "); 
+						fprintf(asm_out_file, "$0x%x, ", item_1->value);
 					}
 				}
 				#undef IS_IN_REGISTER
@@ -335,19 +344,19 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 
 				if (IS_IN_REGISTER(item_1_index)) {
 					i1_register = out_register;
-					fprintf(asm_out, " 	addl   ");
+					fprintf(asm_out_file, " 	addl   ");
 					// Both in registers
 					if (IS_IN_REGISTER(item_2_index)) {
 						i2_register = out_register;
 						if (i2_register < i1_register) {
 							print_register(i1_register, false);
-							fprintf(asm_out, ", ");
+							fprintf(asm_out_file, ", ");
 							out_register = i2_register;
 							current_in_use_register--;
 						}
 						else {
 							print_register(out_register, false);
-							fprintf(asm_out, ", ");
+							fprintf(asm_out_file, ", ");
 							IS_IN_REGISTER(item_1_index);
 							current_in_use_register--;
 						}
@@ -355,24 +364,24 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 					// Item 1 in register, item 2 not.
 					else {
 						IS_IN_REGISTER(item_1_index);
-						fprintf(asm_out, "$0x%x, ", item_2->value);
+						fprintf(asm_out_file, "$0x%x, ", item_2->value);
 					}
 				} 
 				else {
 					// Item 2 in register, item 1 not
 					if (IS_IN_REGISTER(item_2_index)) {
-						fprintf(asm_out, " 	addl   ");
-						fprintf(asm_out, "$0x%x, ", item_1->value);
+						fprintf(asm_out_file, " 	addl   ");
+						fprintf(asm_out_file, "$0x%x, ", item_1->value);
 					} 
 					// Neither item in register
 					else {
 						held_registers[++current_in_use_register] = item_2_index;
-						fprintf(asm_out, "	movl   $0x%x, ", item_2->value);
+						fprintf(asm_out_file, "	movl   $0x%x, ", item_2->value);
 						print_register(current_in_use_register, true);
 						out_register = current_in_use_register;
 
-						fprintf(asm_out, " 	addl   "); 
-						fprintf(asm_out, "$0x%x, ", item_1->value);
+						fprintf(asm_out_file, " 	addl   "); 
+						fprintf(asm_out_file, "$0x%x, ", item_1->value);
 					}
 				}
 				print_register(out_register, true);
@@ -385,7 +394,7 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 				enum Register out_register = 0;
 				if (!item_is_in_register(current_in_use_register, next_item_index - 1, held_registers, &out_register)) {
 					held_registers[++current_in_use_register] = next_item_index - 1;
-					fprintf(asm_out, "	movl   $0x%x, ", compiler_stack[next_item_index - 1].value);
+					fprintf(asm_out_file, "	movl   $0x%x, ", compiler_stack[next_item_index - 1].value);
 					print_register(current_in_use_register, true);
 					out_register = current_in_use_register;
 				}
@@ -394,7 +403,7 @@ void generate_asm(struct AbstractSyntaxStream ass, const string const file_str) 
 					next_unop_index -= compiler_stack[next_item_index - 1].unaries;
 					compiler_stack[next_item_index - 1].unaries = 0;
 				}
-				fprintf(asm_out, " 	ret\n");
+				fprintf(asm_out_file, " 	ret\n");
 			}
 			break;
 			case POL_ENDSTATEMENT:
