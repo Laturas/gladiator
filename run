@@ -1,7 +1,6 @@
-gcc main.c -o glad_compile.exe -O2 -s -fno-ident -fno-asynchronous-unwind-tables
+gcc main.c -o glad_compile.exe -O3 -s -fno-ident -fno-asynchronous-unwind-tables -march=x86-64
 echo "Gladiator compiler re-compiled"
 ./glad_compile.exe test.glad
 gcc -o test_output.exe output.s -nostdlib -ffreestanding
 ./test_output.exe
 echo $?
-cat console.txt
