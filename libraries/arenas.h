@@ -10,9 +10,9 @@
 	 * Their structure is size, max_size, and buffer start pointer in that order.
 	 */
 	typedef struct Arena {
-		u64* const size; // pointer is constant
-		u64* const max_size;
-		u8* const buffer;
+		u64* size; // pointer is constant
+		u64* max_size;
+		u8* buffer;
 	} _Arena;
 
 	/** 

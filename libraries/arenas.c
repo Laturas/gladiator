@@ -50,7 +50,7 @@ void* apush_buf(arena pushed_arena, u64 amt) {
 
 	if (next_mul > current_mul) {
 		mem_commit(pushed_arena.buffer, PGSIZE * next_mul);
-		printf("Expanded!\n");
+		//printf("Expanded!\n");
 	}
 
 	for (u64 i = 0; i < amt; i++) {
@@ -80,7 +80,7 @@ void* _apush(arena pushed_arena, const void* const obj_to_push, u64 size_of_push
 
 	if (next_mul > current_mul) {
 		mem_commit(pushed_arena.buffer, PGSIZE * next_mul);
-		printf("Expanded!\n");
+		//printf("Expanded!\n");
 	}
 
 	for (u64 i = 0; i < size_of_pushed_obj; i++) {

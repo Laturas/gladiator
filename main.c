@@ -49,7 +49,4 @@ int main(int argc, char* argv[]) {
 	//printf("----------------END COMPILER OUTPUT----------------\n");
 
 	generate_asm(ass, str);
-
-	afree(rawfile_arena);
-	afree(token_arena);
 }
