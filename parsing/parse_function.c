@@ -126,11 +126,6 @@ void parse_function_returns(arena ass_arena, Atom** atoms, Atom* bound, const st
 
 }
 
-typedef enum bool {
-	false,
-	true,
-} bool;
-
 bool is_number(u32 start, const string const file_text) {
 	u32 len = token_length(start,file_text);
 	for (int i = start; i < start + len; i++) {

@@ -1,8 +1,8 @@
 #ifndef ATOMIZER
 #define ATOMIZER
-#ifndef u64
-#define u64 unsigned long long
-#endif
+//#ifndef u64
+//#define u64 unsigned long long
+//#endif
 
 enum Token {
     // A token not in the default list. Func/var names and literals primarily.
@@ -45,10 +45,6 @@ enum Token {
     NEWLINE,
     ONELINE_COMMENT,
 } typedef Token;
-
-#ifndef u32
-#define u32 unsigned int
-#endif
 
 typedef struct Atom {
     Token token;

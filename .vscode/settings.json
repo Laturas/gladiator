@@ -7,6 +7,7 @@
         "rpn.h": "c",
         "stdio.h": "c",
         "atomizer.h": "c",
-        "rev_polish_notation.h": "c"
+        "rev_polish_notation.h": "c",
+        "error_handling.h": "c"
     }
 }

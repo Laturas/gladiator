@@ -1,6 +1,6 @@
 #ifndef ARENAS
-	#define u8 unsigned char
-	#define u64 unsigned long long
+	//#define u8 unsigned char
+	//#define u64 unsigned long long
 
 	#define asize(_arena) (*_arena.size) 
 	#define amax_size(_arena) (*_arena.max_size) 
